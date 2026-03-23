@@ -1,0 +1,47 @@
+# CDP AI Platform - Docker Compose
+# 실행: docker-compose up -d
+# 중지: docker-compose down
+
+services:
+  # ─────────────────────────────────
+  # CDP AI 백엔드 서버
+  # ─────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: cdp-api
+    ports:
+      - "8000:8000"
+    volumes:
+      # 데이터 폴더를 호스트와 공유 (결과물 로컬 접근 가능)
+      - ./data:/app/data
+      # SKILL.md 파일은 실시간 반영 (재빌드 불필요)
+      - ./skills:/app/skills
+    env_file:
+      - .env          # API Key 등 환경변수 (.gitignore 포함)
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ─────────────────────────────────
+  # (Phase 3용) ChromaDB Vector DB
+  # 지금은 비활성 - Phase 3에서 활성화
+  # ─────────────────────────────────
+  # chromadb:
+  #   image: chromadb/chroma:latest
+  #   container_name: cdp-chromadb
+  #   ports:
+  #     - "8001:8000"
+  #   volumes:
+  #     - chromadb_data:/chroma/chroma
+  #   restart: unless-stopped
+
+# volumes:
+#   chromadb_data:

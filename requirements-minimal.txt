@@ -1,0 +1,10 @@
+# 최소 설치 (camelot, playwright 제외 - 개발 초기 테스트용)
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+pdfplumber==0.11.4
+pypdf==4.3.1
+pandas==2.2.3
+openpyxl==3.1.5
+httpx==0.27.2
+pytest==8.3.3

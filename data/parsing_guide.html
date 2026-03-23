@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CDP AI Platform — PDF 파싱 가이드</title>
+<style>
+  :root {
+    --green: #276749;
+    --green-mid: #38a169;
+    --green-light: #c6f6d5;
+    --green-bg: #f0fff4;
+    --gray-50: #f7fafc;
+    --gray-100: #edf2f7;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e0;
+    --gray-600: #718096;
+    --gray-700: #4a5568;
+    --gray-800: #2d3748;
+    --gray-900: #1a202c;
+    --white: #ffffff;
+    --shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Pretendard", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--gray-800);
+    background: var(--gray-50);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+  }
+
+  /* Header */
+  header {
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-mid) 100%);
+    color: var(--white);
+    padding: 40px 0 36px;
+    margin-bottom: 40px;
+  }
+  header .container { padding-bottom: 0; }
+  header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+  header .subtitle {
+    font-size: 16px;
+    opacity: 0.9;
+    font-weight: 400;
+  }
+  header .date {
+    margin-top: 12px;
+    font-size: 13px;
+    opacity: 0.75;
+    font-weight: 300;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 48px; }
+  .section-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--green);
+    border-bottom: 3px solid var(--green-mid);
+    padding-bottom: 8px;
+    margin-bottom: 20px;
+  }
+  .section-desc {
+    margin-bottom: 16px;
+    color: var(--gray-700);
+  }
+
+  /* Cards */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border-top: 4px solid var(--green-mid);
+  }
+  .card h4 {
+    color: var(--green);
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+  .card p {
+    font-size: 13px;
+    color: var(--gray-700);
+    line-height: 1.6;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+    background: var(--white);
+    box-shadow: var(--shadow);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  thead th {
+    background: var(--green);
+    color: var(--white);
+    padding: 12px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--gray-200);
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) { background: var(--gray-50); }
+  td code {
+    background: var(--green-bg);
+    color: var(--green);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: "Consolas", "Monaco", monospace;
+  }
+
+  /* Color swatch */
+  .swatch {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin-right: 6px;
+    border: 1px solid var(--gray-300);
+  }
+
+  /* Flow diagrams */
+  .flow {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 24px;
+    margin: 20px 0;
+    box-shadow: var(--shadow);
+  }
+  .flow-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--green);
+    margin-bottom: 16px;
+  }
+  .flow-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .flow-step {
+    background: var(--green-bg);
+    border: 1px solid var(--green-mid);
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--green);
+    font-weight: 500;
+    text-align: center;
+    max-width: 220px;
+  }
+  .flow-arrow {
+    font-size: 20px;
+    color: var(--green-mid);
+    margin: 0 6px;
+    flex-shrink: 0;
+  }
+
+  /* Relationship Diagram */
+  .rel-diagram {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 32px;
+    margin: 20px 0;
+    box-shadow: var(--shadow);
+  }
+  .rel-root { text-align: center; margin-bottom: 24px; }
+  .rel-root-box {
+    display: inline-block;
+    background: var(--green);
+    color: var(--white);
+    padding: 14px 32px;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .rel-connector {
+    width: 2px;
+    height: 28px;
+    background: var(--green-mid);
+    margin: 0 auto;
+  }
+  .rel-branches {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    position: relative;
+  }
+  .rel-branches::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 16.66%;
+    right: 16.66%;
+    height: 2px;
+    background: var(--green-mid);
+  }
+  .rel-branch { text-align: center; }
+  .rel-branch-line {
+    width: 2px;
+    height: 20px;
+    background: var(--green-mid);
+    margin: 0 auto;
+  }
+  .rel-branch-box {
+    background: var(--green-bg);
+    border: 2px solid var(--green-mid);
+    border-radius: 8px;
+    padding: 14px 12px;
+    margin-top: 4px;
+  }
+  .rel-branch-box h4 {
+    color: var(--green);
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  .rel-branch-box .tag {
+    display: inline-block;
+    background: var(--green-mid);
+    color: var(--white);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+  }
+  .rel-branch-box p {
+    font-size: 12px;
+    color: var(--gray-700);
+    line-height: 1.5;
+  }
+
+  /* Purpose tag */
+  .purpose {
+    background: var(--green-bg);
+    border-left: 4px solid var(--green-mid);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+    font-size: 14px;
+    color: var(--green);
+    font-weight: 500;
+  }
+
+  /* Checklist */
+  .checklist { list-style: none; padding: 0; margin: 16px 0; }
+  .checklist li {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 14px;
+  }
+  .checklist .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    background: var(--green);
+    color: var(--white);
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .checklist .text { flex: 1; padding-top: 3px; }
+  .checklist .text strong { color: var(--green); }
+
+  /* Footer */
+  footer {
+    border-top: 2px solid var(--gray-200);
+    padding-top: 20px;
+    margin-top: 48px;
+    text-align: center;
+    color: var(--gray-600);
+    font-size: 13px;
+  }
+
+  /* Print styles */
+  @media print {
+    body { background: white; font-size: 12px; color: #000; }
+    .container { max-width: 100%; padding: 0 16px; }
+    header {
+      background: var(--green) !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      padding: 24px 0;
+      margin-bottom: 24px;
+    }
+    .section { margin-bottom: 28px; page-break-inside: avoid; }
+    .card-grid { gap: 10px; }
+    .card {
+      box-shadow: none;
+      border: 1px solid #ccc;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    table { box-shadow: none; font-size: 11px; }
+    thead th {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .flow, .rel-diagram { box-shadow: none; border: 1px solid #ccc; }
+    .checklist li { box-shadow: none; border: 1px solid #ccc; }
+    .checklist .num {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .swatch {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .rel-root-box, .rel-branch-box, .rel-branch-box .tag {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .flow-step {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    footer { margin-top: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="container">
+    <h1>CDP AI Platform &mdash; PDF 파싱 가이드</h1>
+    <div class="subtitle">엑셀 3시트 구조 및 파싱 기준 설명서</div>
+    <div class="date">2026-03-18</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Section 1: 개요 -->
+  <div class="section">
+    <h2 class="section-title">1. 개요</h2>
+    <p class="section-desc">
+      CDP Questionnaire PDF를 파싱하여 <strong>엑셀 1파일, 3시트</strong>로 출력합니다.
+      각 시트는 서로 다른 관점에서 PDF 원본 데이터를 구조화하며, Claude 플러그인 자동 분석과 수동 검토를 모두 지원합니다.
+    </p>
+    <div class="card-grid">
+      <div class="card">
+        <h4>시트1: 질문_구조화</h4>
+        <p>질문 단위로 정보를 통합하여 Claude 플러그인이 각 질문을 정확히 이해하고 자동 분석할 수 있도록 최적화된 구조</p>
+      </div>
+      <div class="card">
+        <h4>시트2: 텍스트_내용</h4>
+        <p>PDF 내 표 바깥의 모든 텍스트를 원본 그대로 보존하여 검색 및 필터링에 활용</p>
+      </div>
+      <div class="card">
+        <h4>시트3: 테이블_원본</h4>
+        <p>PDF 내 모든 표를 원본 그대로 보존하고 셀 배경색을 분류하여 검증 및 대조에 활용</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2: 시트1 — 질문_구조화 -->
+  <div class="section">
+    <h2 class="section-title">2. 시트1 &mdash; 질문_구조화</h2>
+    <div class="purpose">목적: Claude 플러그인이 질문별로 정확히 이해할 수 있도록 질문 단위로 정보를 통합</div>
+
+    <h3 style="margin: 20px 0 10px; color: var(--gray-800); font-size: 16px;">컬럼 설명</h3>
+    <table>
+      <thead>
+        <tr><th>컬럼</th><th>파싱 기준</th><th>예시</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>질문번호</strong></td>
+          <td>PDF 텍스트에서 <code>(숫자.숫자)</code> 패턴 감지</td>
+          <td><code>(1.1)</code>, <code>(2.3a)</code></td>
+        </tr>
+        <tr>
+          <td><strong>질문내용</strong></td>
+          <td>질문번호 뒤의 텍스트</td>
+          <td>In which language are you submitting...</td>
+        </tr>
+        <tr>
+          <td><strong>페이지</strong></td>
+          <td>해당 질문이 위치한 PDF 페이지 번호</td>
+          <td>12</td>
+        </tr>
+        <tr>
+          <td><strong>Question_Details</strong></td>
+          <td>질문 아래 첫 번째 표 (진한 회색 제목 "Question details").<br>연한 회색=항목명, 흰색=내용. "항목명: 내용" 형태</td>
+          <td>Change from last year: No change / Response options: Select from: English...</td>
+        </tr>
+        <tr>
+          <td><strong>Numbered_Columns</strong></td>
+          <td>숫자 헤더(1, 2, 3...) 표 &mdash; 응답 테이블의 컬럼 정의</td>
+          <td>1: End date, 2: Alignment, 3: Description</td>
+        </tr>
+        <tr>
+          <td><strong>Requested_Content</strong></td>
+          <td>"Requested content" 제목 표 &mdash; 답변 작성 시 참고할 가이드 텍스트</td>
+          <td>General - Note that CDP only considers...</td>
+        </tr>
+        <tr>
+          <td><strong>Tags</strong></td>
+          <td>"Tags" 제목 표 &mdash; 질문의 분류 태그</td>
+          <td>Authority Type: All requesters / Environmental Issue: Question level All</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="flow">
+      <div class="flow-title">파싱 흐름</div>
+      <div class="flow-steps">
+        <div class="flow-step">PDF word 좌표로<br>질문 위치(y좌표) 파악</div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step">해당 질문과 다음 질문 사이의<br>표들을 표 제목으로 자동 분류</div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step">항목명: 내용<br>포맷팅</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: 시트2 — 텍스트_내용 -->
+  <div class="section">
+    <h2 class="section-title">3. 시트2 &mdash; 텍스트_내용</h2>
+    <div class="purpose">목적: PDF 내 표 바깥의 모든 텍스트를 원본 그대로 보존</div>
+
+    <h3 style="margin: 20px 0 10px; color: var(--gray-800); font-size: 16px;">컬럼 설명</h3>
+    <table>
+      <thead>
+        <tr><th>컬럼</th><th>파싱 기준</th><th>예시</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>페이지</strong></td>
+          <td>텍스트가 위치한 PDF 페이지</td>
+          <td>12</td>
+        </tr>
+        <tr>
+          <td><strong>구분</strong></td>
+          <td><code>(번호)</code> 패턴이면 "목차/질문", 아니면 "본문"</td>
+          <td>목차/질문 또는 본문</td>
+        </tr>
+        <tr>
+          <td><strong>섹션번호</strong></td>
+          <td><code>(번호)</code> 패턴에서 추출한 번호</td>
+          <td>(1.1)</td>
+        </tr>
+        <tr>
+          <td><strong>내용</strong></td>
+          <td>해당 라인 텍스트 원문</td>
+          <td>In which language are you...</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="flow">
+      <div class="flow-title">파싱 흐름</div>
+      <div class="flow-steps">
+        <div class="flow-step">각 페이지에서<br>표 영역을 제외(filter)</div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step">남은 텍스트를<br>줄 단위 분리</div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step">(X.Y) 정규식 매칭으로<br>목차/질문 vs 본문 구분</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: 시트3 — 테이블_원본 -->
+  <div class="section">
+    <h2 class="section-title">4. 시트3 &mdash; 테이블_원본</h2>
+    <div class="purpose">목적: PDF 내 모든 표를 원본 그대로 보존 + 셀 배경색 분류</div>
+
+    <p class="section-desc" style="margin-top: 16px;">
+      <strong>색상분류</strong>: PDF 셀 배경 RGB 값으로 분류 (제목/항목/내용)<br>
+      <strong>Col_1 ~ Col_N</strong>: 표의 각 셀 값을 그대로 재현
+    </p>
+
+    <h3 style="margin: 20px 0 10px; color: var(--gray-800); font-size: 16px;">색상분류 기준</h3>
+    <table>
+      <thead>
+        <tr><th>값</th><th>PDF 배경색</th><th>RGB</th><th>의미</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>제목</strong></td>
+          <td><span class="swatch" style="background:#BFBFBF;"></span>진한 회색</td>
+          <td><code>(0.749, 0.749, 0.749)</code></td>
+          <td>표 제목 행 ("Question details", "Tags" 등)</td>
+        </tr>
+        <tr>
+          <td><strong>항목</strong></td>
+          <td><span class="swatch" style="background:#F2F2F2;"></span>연한 회색</td>
+          <td><code>(0.949, 0.949, 0.949)</code></td>
+          <td>필드명 행 ("Change from last year", "Rationale" 등)</td>
+        </tr>
+        <tr>
+          <td><strong>내용</strong></td>
+          <td><span class="swatch" style="background:#FFFFFF;"></span>흰색</td>
+          <td><code>(1.0, 1.0, 1.0)</code></td>
+          <td>값/데이터 행</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="flow">
+      <div class="flow-title">파싱 흐름</div>
+      <div class="flow-steps">
+        <div class="flow-step">pdfplumber로<br>페이지별 표 추출</div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step">page.rects에서<br>배경색 사각형 감지</div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step">각 행의 y좌표와<br>사각형 겹침 판정</div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step">색상 분류</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 5: 시트 간 관계도 -->
+  <div class="section">
+    <h2 class="section-title">5. 시트 간 관계도</h2>
+    <div class="rel-diagram">
+      <div class="rel-root">
+        <div class="rel-root-box">PDF 원본</div>
+      </div>
+      <div class="rel-connector"></div>
+      <div class="rel-branches">
+        <div class="rel-branch">
+          <div class="rel-branch-line"></div>
+          <div class="rel-branch-box">
+            <h4>시트1 "질문_구조화"</h4>
+            <span class="tag">Claude 플러그인 최적화용</span>
+            <p>질문 단위 통합 구조. Claude 플러그인으로 자동 분석하여 응답 초안 생성에 활용</p>
+          </div>
+        </div>
+        <div class="rel-branch">
+          <div class="rel-branch-line"></div>
+          <div class="rel-branch-box">
+            <h4>시트2 "텍스트_내용"</h4>
+            <span class="tag">검색/필터용</span>
+            <p>텍스트 원본 보존. 원본 대조 및 키워드 검색, 수동 검토에 활용</p>
+          </div>
+        </div>
+        <div class="rel-branch">
+          <div class="rel-branch-line"></div>
+          <div class="rel-branch-box">
+            <h4>시트3 "테이블_원본"</h4>
+            <span class="tag">검증/대조용</span>
+            <p>표 원본 보존. 파싱 결과 검증 및 원본 데이터 대조, 수동 검토에 활용</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 6: 향후 정교화 포인트 -->
+  <div class="section">
+    <h2 class="section-title">6. 향후 정교화 포인트 (협의 사항)</h2>
+    <p class="section-desc">내일 미팅에서 논의할 사항들입니다.</p>
+    <ul class="checklist">
+      <li>
+        <span class="num">1</span>
+        <span class="text"><strong>질문번호 패턴 정규식 검증</strong> &mdash; 모든 모듈(1~6)에서 (번호) 패턴이 일관적인지?</span>
+      </li>
+      <li>
+        <span class="num">2</span>
+        <span class="text"><strong>Question_Details 항목명 매핑</strong> &mdash; "Change from last year", "Rationale", "Response options" 외에 다른 항목이 있는지?</span>
+      </li>
+      <li>
+        <span class="num">3</span>
+        <span class="text"><strong>Tags 분류 기준</strong> &mdash; Authority Type, Environmental Issue, Questionnaire Sector 외 추가 태그?</span>
+      </li>
+      <li>
+        <span class="num">4</span>
+        <span class="text"><strong>Numbered_Columns 표 인식</strong> &mdash; 숫자 헤더 행의 정확도, 컬럼명과 설명 분리 기준</span>
+      </li>
+      <li>
+        <span class="num">5</span>
+        <span class="text"><strong>Requested_Content 범위</strong> &mdash; General vs Sector-specific 구분 필요 여부</span>
+      </li>
+      <li>
+        <span class="num">6</span>
+        <span class="text"><strong>색상분류 임계값</strong> &mdash; 현재 0.80/0.96 기준이 모든 페이지에서 유효한지</span>
+      </li>
+      <li>
+        <span class="num">7</span>
+        <span class="text"><strong>2차 기능: 특정 표의 가로/세로 전환</strong> &mdash; 기능 우선순위 논의</span>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    CDP AI Platform &mdash; 파싱 가이드 v1.0 | 2026-03-18 | Generated by Claude Code
+  </footer>
+
+</div>
+</body>
+</html>

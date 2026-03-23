@@ -1,0 +1,15 @@
+﻿.env
+__pycache__/
+*.pyc
+venv/
+.venv/
+data/uploads/*
+data/outputs/*
+data/reference/*
+!data/uploads/.gitkeep
+!data/outputs/.gitkeep
+!data/reference/.gitkeep
+backend/agents/*.backup_*
+data/*.db
+.DS_Store
+Thumbs.db

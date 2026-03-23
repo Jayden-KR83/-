@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(py -c \":*)",
+      "Bash(python3 -c \":*)",
+      "Bash(python3:*)",
+      "Bash(mkdir -p /tmp)",
+      "Bash(ls /tmp)",
+      "Bash(python3 -c \"print\\(''hello''\\)\")",
+      "Bash(python3 -c \"print\\(''ok''\\)\")",
+      "Read(//c/Users/105415/AppData/Local/Temp/**)",
+      "Bash(powershell -Command \"Get-Content ''c:\\\\Project\\\\CDP-AI-Platform\\\\backend\\\\api\\\\routes.py'' | Select-Object -First 60\")",
+      "Bash(powershell -Command \"Get-Content ''c:\\\\Project\\\\CDP-AI-Platform\\\\backend\\\\api\\\\routes.py'' | Select-Object -First 65 | Select-Object -Skip 35\")",
+      "Bash(powershell -Command \"Get-Content ''c:\\\\Project\\\\CDP-AI-Platform\\\\src\\\\index.html'' | Select-String -Pattern ''parse-pdf|추출 시작|추출 완료|excel_path|tables_transposed'' | Select-Object -First 20\")",
+      "Bash(powershell -Command \"Get-Content ''c:\\\\Project\\\\CDP-AI-Platform\\\\frontend\\\\index.html'' | Select-String -Pattern ''parse-pdf|추출 시작|parsePDF|excel_path|결과'' | Select-Object LineNumber, Line | Select-Object -First 20\")",
+      "Bash(powershell -Command \":*)",
+      "Bash(python -c \":*)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\105415\\AppData\\Local\\Temp"
+    ]
+  }
+}

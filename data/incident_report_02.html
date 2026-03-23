@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CDP AI Platform - 인시던트 리포트 #02</title>
+  <style>
+    :root {
+      --green: #276749;
+      --green-mid: #38a169;
+      --green-light: #68d391;
+      --green-bg: #f0fff4;
+      --green-border: #c6f6d5;
+      --orange: #dd6b20;
+      --orange-light: #fed7aa;
+      --red: #c53030;
+      --red-light: #fed7d7;
+      --gray-bg: #f7fafc;
+      --text: #1a202c;
+      --text-muted: #4a5568;
+      --border: #e2e8f0;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+      background: #edf2f7;
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--green) 0%, #1a4731 100%);
+      color: #fff;
+      padding: 36px 24px;
+      text-align: center;
+      border-bottom: 4px solid var(--green-mid);
+    }
+
+    header .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.78rem;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    header .meta {
+      font-size: 0.9rem;
+      opacity: 0.85;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      box-shadow: var(--card-shadow);
+      margin-bottom: 28px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      background: linear-gradient(90deg, var(--green) 0%, var(--green-mid) 100%);
+      color: #fff;
+      padding: 14px 24px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    /* Summary */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .stat-box {
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-box .num {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--green);
+      line-height: 1.2;
+    }
+
+    .stat-box .label {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .summary-text {
+      background: var(--gray-bg);
+      border-left: 4px solid var(--green-mid);
+      border-radius: 0 6px 6px 0;
+      padding: 16px 20px;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    /* Timeline */
+    .timeline {
+      position: relative;
+      padding-left: 0;
+      list-style: none;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 22px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--border);
+    }
+
+    .timeline-item {
+      position: relative;
+      padding: 0 0 28px 60px;
+    }
+
+    .timeline-item:last-child {
+      padding-bottom: 0;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: 10px;
+      top: 4px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #fff;
+      z-index: 1;
+    }
+
+    .dot-green  { background: var(--green-mid); }
+    .dot-orange { background: var(--orange); }
+    .dot-red    { background: var(--red); }
+    .dot-blue   { background: #3182ce; }
+    .dot-purple { background: #6b46c1; }
+
+    .timeline-stage {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .timeline-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .timeline-body {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    .timeline-body code {
+      background: #2d3748;
+      color: #f6e05e;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-family: "Consolas", "Monaco", monospace;
+      font-size: 0.82rem;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+
+    .tag-green  { background: var(--green-bg);    color: var(--green);  border: 1px solid var(--green-border); }
+    .tag-orange { background: var(--orange-light); color: #7b341e;       border: 1px solid #fbd38d; }
+    .tag-red    { background: var(--red-light);    color: #742a2a;       border: 1px solid #feb2b2; }
+    .tag-blue   { background: #ebf8ff;             color: #2b6cb0;       border: 1px solid #bee3f8; }
+    .tag-purple { background: #faf5ff;             color: #553c9a;       border: 1px solid #d6bcfa; }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    thead tr {
+      background: linear-gradient(90deg, var(--green) 0%, var(--green-mid) 100%);
+      color: #fff;
+    }
+
+    thead th {
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    tbody tr { border-bottom: 1px solid var(--border); }
+    tbody tr:nth-child(even) { background: var(--gray-bg); }
+    tbody tr:hover { background: var(--green-bg); }
+
+    tbody td {
+      padding: 11px 16px;
+      vertical-align: top;
+    }
+
+    /* Code block */
+    .code-block {
+      background: #1a202c;
+      color: #a0aec0;
+      border-radius: 8px;
+      padding: 18px 20px;
+      font-family: "Consolas", "Monaco", monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+
+    .code-block .c-green  { color: #68d391; }
+    .code-block .c-yellow { color: #f6e05e; }
+    .code-block .c-red    { color: #fc8181; }
+    .code-block .c-blue   { color: #90cdf4; }
+    .code-block .c-gray   { color: #718096; }
+
+    /* Root cause */
+    .cause-list { list-style: none; padding: 0; }
+
+    .cause-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .cause-item:last-child { margin-bottom: 0; }
+
+    .cause-num {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--red);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .cause-content h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .cause-content p { font-size: 0.87rem; color: var(--text-muted); }
+
+    /* Checklist */
+    .checklist {
+      list-style: none;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 10px;
+    }
+
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      border-radius: 8px;
+      font-size: 0.88rem;
+    }
+
+    .check-icon {
+      color: var(--green-mid);
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Alert box */
+    .alert {
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .alert-orange {
+      background: var(--orange-light);
+      border: 1px solid #fbd38d;
+      color: #7b341e;
+    }
+
+    .lesson-box {
+      background: linear-gradient(135deg, #1a4731 0%, var(--green) 100%);
+      color: #fff;
+      border-radius: 10px;
+      padding: 22px 26px;
+      margin-top: 16px;
+      font-size: 0.95rem;
+      line-height: 1.8;
+    }
+
+    .lesson-box strong { color: var(--green-light); }
+
+    .danger-box {
+      background: var(--red-light);
+      border: 1px solid #feb2b2;
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-top: 12px;
+      font-size: 0.87rem;
+      color: #742a2a;
+    }
+
+    .user-quote {
+      background: #fefcbf;
+      border-left: 4px solid #d69e2e;
+      border-radius: 0 6px 6px 0;
+      padding: 14px 18px;
+      margin-top: 12px;
+      font-size: 0.88rem;
+      color: #744210;
+      font-style: italic;
+    }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      border-top: 1px solid var(--border);
+      background: #fff;
+    }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.4rem; }
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .checklist { grid-template-columns: 1fr; }
+      .card-body { padding: 16px; }
+    }
+
+    code.inline {
+      background: #2d3748;
+      color: #f6e05e;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: "Consolas", "Monaco", monospace;
+      font-size: 0.85rem;
+    }
+
+    code.cause-inline {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: "Consolas", "Monaco", monospace;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="badge">INCIDENT REPORT #02</div>
+  <h1>CDP AI Platform</h1>
+  <h2 style="font-size:1.35rem; font-weight:400; margin-bottom:10px;">PDF 파서 코드 재작성 후 미검증 배포</h2>
+  <div class="meta">
+    작성일: 2026-03-17 &nbsp;|&nbsp;
+    심각도: <span style="color:#f6e05e; font-weight:600;">MEDIUM</span>
+    &nbsp;|&nbsp;
+    상태: <span style="color:#68d391; font-weight:600;">해결 완료</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ===== 사태 요약 ===== -->
+  <div class="card">
+    <div class="card-header">
+      <span>&#128203;</span> 사태 요약
+    </div>
+    <div class="card-body">
+      <div class="summary-grid">
+        <div class="stat-box">
+          <div class="num">766줄</div>
+          <div class="label">전면 재작성된 코드</div>
+        </div>
+        <div class="stat-box">
+          <div class="num">4건</div>
+          <div class="label">연쇄 오류 발생 횟수</div>
+        </div>
+        <div class="stat-box">
+          <div class="num">1개</div>
+          <div class="label">근본 원인 (필드명 불일치)</div>
+        </div>
+        <div class="stat-box">
+          <div class="num">완료</div>
+          <div class="label">최종 복구 상태</div>
+        </div>
+      </div>
+      <div class="summary-text">
+        Agent(Claude Code)가 <code class="inline">pdf_parser_agent.py</code>를 전면 재작성한 후,
+        구문(syntax) 검사만 통과시키고 실제 런타임 오류를 검증하지 않은 채
+        사용자에게 "서버 재시작 후 테스트하세요"라고 안내함.
+        사용자가 브라우저에서 테스트했을 때 <strong>"Internal Server Error"</strong> 발생.
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 사태 타임라인 ===== -->
+  <div class="card">
+    <div class="card-header">
+      <span>&#128336;</span> 사태 타임라인
+    </div>
+    <div class="card-body">
+      <ul class="timeline">
+
+        <li class="timeline-item">
+          <div class="timeline-dot dot-green">1</div>
+          <div class="timeline-stage">Stage 1 &mdash; 정상</div>
+          <div class="timeline-title">사용자 요청 접수 <span class="tag tag-green">Normal</span></div>
+          <div class="timeline-body">
+            사용자가 PDF 파싱 기능 보완 요청:
+            텍스트+표 원본 재현, (번호) 패턴 구분 등 기능 개선 사항 전달.
+          </div>
+        </li>
+
+        <li class="timeline-item">
+          <div class="timeline-dot dot-orange">2</div>
+          <div class="timeline-stage">Stage 2 &mdash; 코드 재작성</div>
+          <div class="timeline-title">Subagent를 통한 전면 재작성 <span class="tag tag-orange">Warning</span></div>
+          <div class="timeline-body">
+            Agent가 subagent를 통해 <code>pdf_parser_agent.py</code> 766줄을 전면 재작성.
+            기존 코드를 부분 수정하는 대신 전체를 새로 작성하는 방식 선택.
+          </div>
+        </li>
+
+        <li class="timeline-item">
+          <div class="timeline-dot dot-red">3</div>
+          <div class="timeline-stage">Stage 3 &mdash; 검증 부족</div>
+          <div class="timeline-title">구문 검사만 수행 후 사용자에게 안내 <span class="tag tag-red">Critical</span></div>
+          <div class="timeline-body">
+            <code>ast.parse()</code> 구문 검사 + import 테스트만 수행한 후
+            "서버 재시작하세요"라고 안내.
+            실제 PDF 파일을 이용한 런타임 테스트는 수행하지 않음.
+            <div class="code-block">
+<span class="c-gray"># Agent가 수행한 검증 (불충분)</span>
+<span class="c-blue">import</span> ast
+ast.<span class="c-green">parse</span>(<span class="c-yellow">source_code</span>)  <span class="c-gray"># 구문만 확인</span>
+<span class="c-blue">import</span> pdf_parser_agent   <span class="c-gray"># 로딩만 확인</span>
+
+<span class="c-gray"># Agent가 수행하지 않은 검증 (필요했던 것)</span>
+<span class="c-gray"># result = await run_pdf_parser(test_pdf)  # 실제 실행</span>
+<span class="c-gray"># result.model_dump()                      # 직렬화 검증</span>
+<span class="c-gray"># json.dumps(result.model_dump())           # JSON 변환</span>
+            </div>
+          </div>
+        </li>
+
+        <li class="timeline-item">
+          <div class="timeline-dot dot-red">4</div>
+          <div class="timeline-stage">Stage 4 &mdash; 오류 발생</div>
+          <div class="timeline-title">Internal Server Error 발생 <span class="tag tag-red">Critical</span></div>
+          <div class="timeline-body">
+            사용자가 추출 시작 버튼 클릭 &rarr; <strong>"Internal Server Error"</strong> 발생.
+            원인: <code>ValidationResult</code>에 <code>confidence_score</code> 필드 누락
+            (subagent가 <code>score</code>로 잘못 작성).
+          </div>
+        </li>
+
+        <li class="timeline-item">
+          <div class="timeline-dot dot-orange">5</div>
+          <div class="timeline-stage">Stage 5 &mdash; 연쇄 오류 수정</div>
+          <div class="timeline-title">4건의 연쇄 오류 발견 및 수정 <span class="tag tag-orange">Warning</span></div>
+          <div class="timeline-body">
+            <ul style="margin-top:8px; padding-left:18px; line-height:2.2;">
+              <li><code>ValidationResult</code>: <code class="cause-inline">score</code> &rarr; <code>confidence_score</code> (필드명 불일치)</li>
+              <li><code>QuestionItem</code>: <code class="cause-inline">page_number</code> &rarr; <code>page_num</code> (필드명 불일치)</li>
+              <li><code>QuestionItem</code>: <code class="cause-inline">points</code> &rarr; <code>max_points</code> (필드명 불일치)</li>
+              <li><code>AgentResult</code>: <code class="cause-inline">agent_name</code> 누락 + <code class="cause-inline">message</code> &rarr; <code>error_message</code> + <code class="cause-inline">execution_time</code> &rarr; <code>processing_time_sec</code> + <code class="cause-inline">AgentStatus.ERROR</code> &rarr; <code>AgentStatus.FAILED</code></li>
+            </ul>
+          </div>
+        </li>
+
+        <li class="timeline-item">
+          <div class="timeline-dot dot-green">6</div>
+          <div class="timeline-stage">Stage 6 &mdash; 최종 복구</div>
+          <div class="timeline-title">전체 파이프라인 검증 후 정상 확인 <span class="tag tag-green">Resolved</span></div>
+          <div class="timeline-body">
+            모든 Pydantic 모델 필드명을 <code>models.py</code>와 대조하여 수정 완료.
+            실제 PDF 파일로 end-to-end 테스트 통과,
+            <code>model_dump()</code> 직렬화 및 <code>json.dumps()</code> 변환 정상 확인.
+          </div>
+        </li>
+
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== 근본 원인 분석 ===== -->
+  <div class="card">
+    <div class="card-header">
+      <span>&#128269;</span> 근본 원인 분석
+    </div>
+    <div class="card-body">
+      <ul class="cause-list">
+
+        <li class="cause-item">
+          <div class="cause-num">1</div>
+          <div class="cause-content">
+            <h4>Subagent의 Pydantic 모델 필드명 불일치</h4>
+            <p>
+              Subagent가 코드를 작성할 때 실제 Pydantic 모델(<code class="inline">models.py</code>)의
+              필드명을 정확히 참조하지 않고 유사한 이름으로 추측하여 작성했습니다.
+            </p>
+            <div class="code-block" style="margin-top:12px;">
+<span class="c-gray"># Subagent가 작성한 필드명 &rarr; 실제 models.py 필드명</span>
+<span class="c-red">score</span>            &rarr; <span class="c-green">confidence_score</span>
+<span class="c-red">page_number</span>      &rarr; <span class="c-green">page_num</span>
+<span class="c-red">points</span>           &rarr; <span class="c-green">max_points</span>
+<span class="c-red">message</span>          &rarr; <span class="c-green">error_message</span>
+<span class="c-red">execution_time</span>   &rarr; <span class="c-green">processing_time_sec</span>
+<span class="c-red">AgentStatus.ERROR</span> &rarr; <span class="c-green">AgentStatus.FAILED</span>
+            </div>
+            <div class="danger-box">
+              <strong>왜 위험한가:</strong> Python은 동적 타입 언어라 이런 오류가 구문 검사(<code class="inline">ast.parse</code>)에서
+              잡히지 않고, import 시에도 발견되지 않으며, 실제 런타임에서만 발견됩니다.
+            </div>
+          </div>
+        </li>
+
+        <li class="cause-item">
+          <div class="cause-num">2</div>
+          <div class="cause-content">
+            <h4>불충분한 사전 검증</h4>
+            <p>
+              Agent가 수행한 검증은 다음 두 가지뿐이었습니다:
+            </p>
+            <ul style="margin-top:8px; padding-left:18px; font-size:0.87rem; color:var(--text-muted); line-height:2;">
+              <li><code class="inline">ast.parse()</code> = 구문 오류만 검출 (괄호 불일치, 들여쓰기 등)</li>
+              <li>import 테스트 = 모듈 로딩만 확인 (실제 함수 실행하지 않음)</li>
+              <li>실제 PDF 파일로 end-to-end 테스트를 하지 않고 사용자에게 테스트를 떠넘김</li>
+            </ul>
+            <div class="user-quote">
+              "너 이번에도 오류가 발생했는데 그냥 나한테 실행 안내를 했어"
+            </div>
+          </div>
+        </li>
+
+        <li class="cause-item">
+          <div class="cause-num">3</div>
+          <div class="cause-content">
+            <h4>Subagent 위임 시 모델 스키마 미전달</h4>
+            <p>
+              Subagent에게 코드 작성을 위임할 때, Pydantic 모델의 정확한 필드명(<code class="inline">models.py</code>)을
+              함께 전달하지 않아 subagent가 필드명을 추측하여 작성했습니다.
+              모델 스키마를 함께 전달했다면 4건의 연쇄 오류가 모두 방지될 수 있었습니다.
+            </p>
+          </div>
+        </li>
+
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== 재발 방지 대책 ===== -->
+  <div class="card">
+    <div class="card-header">
+      <span>&#128737;</span> 재발 방지 대책
+    </div>
+    <div class="card-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>대책</th>
+              <th>설명</th>
+              <th>적용 상태</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1</strong></td>
+              <td>코드 재작성 후 end-to-end 테스트</td>
+              <td>코드 재작성 후 반드시 실제 PDF 파일로 전체 파이프라인(추출 &rarr; 파싱 &rarr; 직렬화 &rarr; 응답)을 테스트</td>
+              <td><span class="tag tag-green">&#10003; 적용됨</span></td>
+            </tr>
+            <tr>
+              <td><strong>2</strong></td>
+              <td><code class="inline">model_dump()</code> 직렬화 테스트</td>
+              <td>FastAPI 응답 시뮬레이션을 통해 Pydantic 모델의 직렬화가 정상적으로 수행되는지 확인</td>
+              <td><span class="tag tag-green">&#10003; 적용됨</span></td>
+            </tr>
+            <tr>
+              <td><strong>3</strong></td>
+              <td>JSON 직렬화 테스트</td>
+              <td><code class="inline">json.dumps()</code>를 통해 JSON serializable 여부를 사전 확인</td>
+              <td><span class="tag tag-green">&#10003; 적용됨</span></td>
+            </tr>
+            <tr>
+              <td><strong>4</strong></td>
+              <td>Subagent에게 모델 원문 전달</td>
+              <td>Subagent에게 코드 작성 위임 시 <code class="inline">models.py</code>의 Pydantic 모델 원문을 반드시 함께 전달</td>
+              <td><span class="tag tag-green">&#10003; 적용됨</span></td>
+            </tr>
+            <tr>
+              <td><strong>5</strong></td>
+              <td>5단계 필수 검증</td>
+              <td>"테스트하세요" 안내 전 최소 5단계 검증 필수: 구문 &rarr; import &rarr; 런타임 &rarr; 직렬화 &rarr; JSON</td>
+              <td><span class="tag tag-green">&#10003; 적용됨</span></td>
+            </tr>
+            <tr>
+              <td><strong>6</strong></td>
+              <td>자체 수정 완료 후 안내</td>
+              <td>검증 실패 시 사용자에게 안내하지 않고 자체 수정 완료 후 안내. 사용자에게 오류 테스트를 떠넘기지 않음</td>
+              <td><span class="tag tag-green">&#10003; 적용됨</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 검증 체크리스트 ===== -->
+  <div class="card">
+    <div class="card-header">
+      <span>&#9989;</span> 검증 체크리스트 (코드 수정 시 필수 수행)
+    </div>
+    <div class="card-body">
+      <p style="margin-bottom:16px; color:var(--text-muted); font-size:0.88rem;">
+        앞으로 코드 수정 시 아래 7단계를 반드시 순서대로 수행해야 합니다.
+        모든 단계를 통과한 후에만 사용자에게 안내할 수 있습니다.
+      </p>
+      <ul class="checklist">
+        <li>
+          <span class="check-icon">&#10004;</span>
+          <span><strong>1. ast.parse() 구문 검사</strong><br>Python 구문 오류(괄호, 들여쓰기 등) 검출</span>
+        </li>
+        <li>
+          <span class="check-icon">&#10004;</span>
+          <span><strong>2. import 테스트</strong><br>모듈 로딩 성공 여부 확인</span>
+        </li>
+        <li>
+          <span class="check-icon">&#10004;</span>
+          <span><strong>3. 실제 데이터로 함수 실행</strong><br><code class="inline">run_pdf_parser</code> 직접 호출하여 런타임 오류 확인</span>
+        </li>
+        <li>
+          <span class="check-icon">&#10004;</span>
+          <span><strong>4. model_dump() 직렬화</strong><br>Pydantic 모델의 직렬화 정상 동작 확인</span>
+        </li>
+        <li>
+          <span class="check-icon">&#10004;</span>
+          <span><strong>5. json.dumps() JSON 변환</strong><br>API 응답용 JSON 변환 가능 여부 확인</span>
+        </li>
+        <li>
+          <span class="check-icon">&#10004;</span>
+          <span><strong>6. Excel 파일 생성 확인</strong><br>출력 파일 크기 > 0 확인</span>
+        </li>
+        <li>
+          <span class="check-icon">&#10004;</span>
+          <span><strong>7. 모든 단계 통과 후 안내</strong><br>검증 완료 전 사용자에게 테스트 안내 금지</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== 불필요한 시간 소요 분석 ===== -->
+  <div class="card">
+    <div class="card-header">
+      <span>&#9200;</span> 이번 사태로 소요된 불필요한 시간
+    </div>
+    <div class="card-body">
+      <p style="margin-bottom:16px; color:var(--text-muted); font-size:0.88rem;">
+        4건의 연쇄 오류가 모두 동일한 원인(모델 필드명 불일치)에서 비롯되었습니다.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>단계</th>
+              <th>작업</th>
+              <th>원인</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag tag-red">1차 오류 수정</span></td>
+              <td><code class="inline">confidence_score</code> 필드 수정</td>
+              <td>모델 필드명 미확인</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-red">2차 오류 수정</span></td>
+              <td><code class="inline">page_number</code> &rarr; <code class="inline">page_num</code></td>
+              <td>모델 필드명 미확인</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-red">3차 오류 수정</span></td>
+              <td><code class="inline">points</code> &rarr; <code class="inline">max_points</code></td>
+              <td>모델 필드명 미확인</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-red">4차 오류 수정</span></td>
+              <td><code class="inline">agent_name</code> 외 4개 필드 전면 수정</td>
+              <td>모델 필드명 미확인</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="lesson-box">
+        <strong>핵심 교훈</strong>
+        <br><br>
+        4건의 오류 모두 동일한 원인 &mdash; <strong>모델 필드명 불일치</strong>.
+        <br><br>
+        Subagent에게 <strong>models.py를 전달</strong>했거나,
+        1차 테스트 후 <strong>한꺼번에 수정</strong>했다면
+        4번 반복 대신 <strong>1번에 해결 가능</strong>했습니다.
+        <br><br>
+        <code style="background:rgba(255,255,255,0.15); padding:4px 10px; border-radius:4px; font-size:0.85rem; font-family:'Consolas','Monaco',monospace;">
+          구문 검사 통과 ≠ 코드 정상 동작
+        </code>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  CDP AI Platform &mdash; 인시던트 리포트 #02 &mdash; 2026-03-17
+  <br>
+  본 문서는 동일한 오류의 재발 방지를 위해 작성되었습니다.
+</footer>
+
+</body>
+</html>

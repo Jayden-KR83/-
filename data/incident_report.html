@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CDP AI Platform - 인시던트 리포트</title>
+  <style>
+    :root {
+      --green: #276749;
+      --green-mid: #38a169;
+      --green-light: #68d391;
+      --green-bg: #f0fff4;
+      --green-border: #c6f6d5;
+      --orange: #dd6b20;
+      --orange-light: #fed7aa;
+      --red: #c53030;
+      --red-light: #fed7d7;
+      --gray-bg: #f7fafc;
+      --text: #1a202c;
+      --text-muted: #4a5568;
+      --border: #e2e8f0;
+      --card-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+      background: #edf2f7;
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--green) 0%, #1a4731 100%);
+      color: #fff;
+      padding: 36px 24px;
+      text-align: center;
+      border-bottom: 4px solid var(--green-mid);
+    }
+
+    header .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.78rem;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    header .meta {
+      font-size: 0.9rem;
+      opacity: 0.85;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      box-shadow: var(--card-shadow);
+      margin-bottom: 28px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      background: linear-gradient(90deg, var(--green) 0%, var(--green-mid) 100%);
+      color: #fff;
+      padding: 14px 24px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    /* Summary */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .stat-box {
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-box .num {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--green);
+      line-height: 1.2;
+    }
+
+    .stat-box .label {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .summary-text {
+      background: var(--gray-bg);
+      border-left: 4px solid var(--green-mid);
+      border-radius: 0 6px 6px 0;
+      padding: 16px 20px;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    /* Timeline */
+    .timeline {
+      position: relative;
+      padding-left: 0;
+      list-style: none;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 22px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--border);
+    }
+
+    .timeline-item {
+      position: relative;
+      padding: 0 0 28px 60px;
+    }
+
+    .timeline-item:last-child {
+      padding-bottom: 0;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: 10px;
+      top: 4px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #fff;
+      z-index: 1;
+    }
+
+    .dot-green  { background: var(--green-mid); }
+    .dot-orange { background: var(--orange); }
+    .dot-red    { background: var(--red); }
+    .dot-blue   { background: #3182ce; }
+    .dot-purple { background: #6b46c1; }
+
+    .timeline-stage {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .timeline-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .timeline-body {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    .timeline-body code {
+      background: #2d3748;
+      color: #f6e05e;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-family: "Consolas", "Monaco", monospace;
+      font-size: 0.82rem;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+
+    .tag-green  { background: var(--green-bg);    color: var(--green);  border: 1px solid var(--green-border); }
+    .tag-orange { background: var(--orange-light); color: #7b341e;       border: 1px solid #fbd38d; }
+    .tag-red    { background: var(--red-light);    color: #742a2a;       border: 1px solid #feb2b2; }
+    .tag-blue   { background: #ebf8ff;             color: #2b6cb0;       border: 1px solid #bee3f8; }
+    .tag-purple { background: #faf5ff;             color: #553c9a;       border: 1px solid #d6bcfa; }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    thead tr {
+      background: linear-gradient(90deg, var(--green) 0%, var(--green-mid) 100%);
+      color: #fff;
+    }
+
+    thead th {
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    tbody tr { border-bottom: 1px solid var(--border); }
+    tbody tr:nth-child(even) { background: var(--gray-bg); }
+    tbody tr:hover { background: var(--green-bg); }
+
+    tbody td {
+      padding: 11px 16px;
+      vertical-align: top;
+    }
+
+    /* Code block */
+    .code-block {
+      background: #1a202c;
+      color: #a0aec0;
+      border-radius: 8px;
+      padding: 18px 20px;
+      font-family: "Consolas", "Monaco", monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+
+    .code-block .c-green  { color: #68d391; }
+    .code-block .c-yellow { color: #f6e05e; }
+    .code-block .c-red    { color: #fc8181; }
+    .code-block .c-blue   { color: #90cdf4; }
+    .code-block .c-gray   { color: #718096; }
+
+    /* Root cause */
+    .cause-list { list-style: none; padding: 0; }
+
+    .cause-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .cause-item:last-child { margin-bottom: 0; }
+
+    .cause-num {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--red);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .cause-content h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .cause-content p { font-size: 0.87rem; color: var(--text-muted); }
+
+    /* Checklist */
+    .checklist {
+      list-style: none;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 10px;
+    }
+
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      border-radius: 8px;
+      font-size: 0.88rem;
+    }
+
+    .check-icon {
+      color: var(--green-mid);
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Recovery */
+    .recovery-steps {
+      counter-reset: step;
+      list-style: none;
+      padding: 0;
+    }
+
+    .recovery-step {
+      counter-increment: step;
+      display: flex;
+      gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .recovery-step:last-child { border-bottom: none; }
+
+    .recovery-step::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--green-mid);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .recovery-step-body { flex: 1; }
+
+    .recovery-step-body h4 {
+      font-size: 0.93rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .recovery-step-body p { font-size: 0.85rem; color: var(--text-muted); }
+
+    /* Alert box */
+    .alert {
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .alert-orange {
+      background: var(--orange-light);
+      border: 1px solid #fbd38d;
+      color: #7b341e;
+    }
+
+    .lesson-box {
+      background: linear-gradient(135deg, #1a4731 0%, var(--green) 100%);
+      color: #fff;
+      border-radius: 10px;
+      padding: 22px 26px;
+      margin-top: 16px;
+      font-size: 0.95rem;
+      line-height: 1.8;
+    }
+
+    .lesson-box strong { color: var(--green-light); }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      border-top: 1px solid var(--border);
+      background: #fff;
+    }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.4rem; }
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .checklist { grid-template-columns: 1fr; }
+      .card-body { padding: 16px; }
+    }
+
+    code.inline {
+      background: #2d3748;
+      color: #f6e05e;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: "Consolas", "Monaco", monospace;
+      font-size: 0.85rem;
+    }
+
+    code.cause-inline {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: "Consolas", "Monaco", monospace;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="badge">INCIDENT REPORT</div>
+  <h1>CDP AI Platform</h1>
+  <h2 style="font-size:1.35rem; font-weight:400; margin-bottom:10px;">인시던트 리포트</h2>
+  <div class="meta">
+    작성일: 2026-03-16 &nbsp;|&nbsp;
+    심각도: <span style="color:#fc8181; font-weight:600;">HIGH</span>
+    &nbsp;|&nbsp;
+    상태: <span style="color:#68d391; font-weight:600;">해결 완료</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ===== 사태 요약 ===== -->
+  <div class="card">
+    <div class="card-header">
+      <span>&#128203;</span> 사태 요약
+    </div>
+    <div class="card-body">
+      <div class="summary-grid">
+        <div class="stat-box">
+          <div class="num">3회</div>
+          <div class="label">파일 손상 발생 횟수</div>
+        </div>
+        <div class="stat-box">
+          <div class="num">40MB</div>
+          <div class="label">최대 팽창 파일 크기</div>
+        </div>
+        <div class="stat-box">
+          <div class="num">0 B</div>
+          <div class="label">UnicodeError 후 파일 크기</div>
+        </div>
+        <div class="stat-box">
+          <div class="num">완료</div>
+          <div class="label">최종 복구 상태</div>
+        </div>
+      </div>
+      <div class="summary-text">
+        CDP AI Platform 개발 과정에서 프론트엔드 진입점 파일인
+        <code class="inline">frontend/index.html</code>이
+        총 <strong>3차례</strong> 손상되었습니다.
+        각 손상은 서로 다른 원인(JS 문법 오류 삽입, replace 버그로 인한 파일 팽창,
+        인코딩 미지정으로 인한 파일 소실)에 의해 발생하였으며,
+        캐시 복구 시도 역시 CP949 인코딩 문제로 한국어 콘텐츠가 소실되는 부작용을 낳았습니다.
+        최종적으로 HTML 파일을 <strong>전면 재건(rebuild)</strong>하는 방식으로 복구가 완료되었습니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 사태 타임라인 ===== -->
+  <div class="card">
+    <div class="card-header">
+      <span>&#128336;</span> 사태 타임라인
+    </div>
+    <div class="card-body">
+      <ul class="timeline">
+
+        <li class="timeline-item">
+          <div class="timeline-dot dot-green">1</div>
+          <div class="timeline-stage">Stage 1 &mdash; 정상</div>
+          <div class="timeline-title">정상 상태 <span class="tag tag-green">Normal</span></div>
+          <div class="timeline-body">
+            <code>frontend/index.html</code> 파일이 정상적으로 존재하며,
+            CDP AI Platform의 모든 기능이 브라우저에서 정상 로딩됨.
+            파일 크기 약 44KB, UTF-8 인코딩.
+          </div>
+        </li>
+
+        <li class="timeline-item">
+          <div class="timeline-dot dot-orange">2</div>
+          <div class="timeline-stage">Stage 2 &mdash; 1차 손상</div>
+          <div class="timeline-title">JS 문법 오류 삽입 <span class="tag tag-orange">Warning</span></div>
+          <div class="timeline-body">
+            파일 수정 과정에서 두 가지 JavaScript 문법 오류가 삽입됨:
+            <ul style="margin-top:8px; padding-left:18px;">
+              <li>중복 키워드: <code>async async function</code> 형태의 잘못된 함수 선언</li>
+              <li>불완전한 정규식: <code>/\/g</code> (닫는 슬래시 누락으로 파싱 오류)</li>
+            </ul>
+            <br>브라우저 콘솔에 <code>SyntaxError</code> 발생, 화면 전체 블랭크.
+          </div>
+        </li>
+
+        <li class="timeline-item">
+          <div class="timeline-dot dot-red">3</div>
+          <div class="timeline-stage">Stage 3 &mdash; 2차 손상</div>
+          <div class="timeline-title">파일 팽창 (44KB → 40MB) <span class="tag tag-red">Critical</span></div>
+          <div class="timeline-body">
+            오류 수정 시도 중 Python 스크립트의 <code>str.replace()</code> 호출에서 치명적인 버그 발생:
+            <div class="code-block">
+<span class="c-gray"># 버그 코드 — 빈 문자열을 찾아 매 위치마다 new_block 삽입</span>
+content.<span class="c-red">replace</span>(<span class="c-yellow">''</span>, new_block)
+
+<span class="c-gray"># Python에서 빈 문자열('')은 모든 문자 사이에 매칭됨</span>
+<span class="c-gray"># 44KB 파일의 수만 개 위치 x new_block 크기 = 40MB 팽창</span>
+            </div>
+            44KB였던 파일이 약 <strong>40MB</strong>로 팽창.
+            브라우저 로딩 불가 및 에디터 응답 불가 상태 발생.
+          </div>
+        </li>
+
+        <li class="timeline-item">
+          <div class="timeline-dot dot-red">4</div>
+          <div class="timeline-stage">Stage 4 &mdash; 3차 손상</div>
+          <div class="timeline-title">UnicodeEncodeError → 0 bytes 파일 <span class="tag tag-red">Critical</span></div>
+          <div class="timeline-body">
+            팽창된 파일을 수동으로 정리 후 재저장 시,
+            <code>encoding</code> 파라미터 미지정으로 인해:
+            <div class="code-block">
+<span class="c-gray"># 문제 코드 — Windows 환경에서 기본 인코딩은 CP949</span>
+<span class="c-blue">with</span> <span class="c-green">open</span>(<span class="c-yellow">'frontend/index.html'</span>, <span class="c-yellow">'w'</span>) <span class="c-blue">as</span> f:
+    f.<span class="c-green">write</span>(content)  <span class="c-gray"># 한국어 문자 → UnicodeEncodeError</span>
+
+<span class="c-gray"># open()이 파일을 먼저 생성(truncate)한 후 write()에서 오류 발생</span>
+<span class="c-gray"># 결과: 0 bytes 빈 파일만 남음</span>
+            </div>
+            <code>UnicodeEncodeError: 'cp949' codec can't encode character</code> 발생.
+            파일이 이미 truncate된 상태에서 예외 발생 → <strong>0 bytes 빈 파일</strong>만 남음.
+          </div>
+        </li>
+
+        <li class="timeline-item">
+          <div class="timeline-dot dot-purple">5</div>
+          <div class="timeline-stage">Stage 5 &mdash; 캐시 복구 시도</div>
+          <div class="timeline-title">CP949 인코딩 캐시 복구 — 한국어 소실 <span class="tag tag-purple">Partial</span></div>
+          <div class="timeline-body">
+            브라우저 캐시 및 에디터 히스토리에서 이전 버전을 복구하였으나,
+            해당 캐시가 <strong>CP949 인코딩</strong>으로 저장되어 있어
+            한국어 텍스트가 모두 깨지거나 소실됨.
+            UI 레이아웃은 복원되었으나 메뉴 라벨, 버튼 텍스트 등
+            모든 한국어 콘텐츠 누락.
+            불완전한 복구 상태로는 서비스 재개 불가 판단.
+          </div>
+        </li>
+
+        <li class="timeline-item">
+          <div class="timeline-dot dot-green">6</div>
+          <div class="timeline-stage">Stage 6 &mdash; 최종 복구</div>
+          <div class="timeline-title">HTML 전면 재건으로 복구 완료 <span class="tag tag-green">Resolved</span></div>
+          <div class="timeline-body">
+            원본 설계 문서와 기능 명세를 기반으로
+            <code>frontend/index.html</code>을 처음부터 재건(rebuild).
+            <div class="code-block">
+<span class="c-gray"># 올바른 코드 — encoding 명시적 지정</span>
+<span class="c-blue">with</span> <span class="c-green">open</span>(<span class="c-yellow">'frontend/index.html'</span>, <span class="c-yellow">'w'</span>, <span class="c-green">encoding</span>=<span class="c-yellow">'utf-8'</span>) <span class="c-blue">as</span> f:
+    f.<span class="c-green">write</span>(content)
+            </div>
+            모든 기능, 한국어 콘텐츠, UI 레이아웃 정상 복구.
+            이후 <code>index.html.backup</code> 상시 유지 정책 도입.
+          </div>
+        </li>
+
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== 근본 원인 분석 ===== -->
+  <div class="card">
+    <div class="card-header">
+      <span>&#128269;</span> 근본 원인 분석
+    </div>
+    <div class="card-body">
+      <ul class="cause-list">
+
+        <li class="cause-item">
+          <div class="cause-num">1</div>
+          <div class="cause-content">
+            <h4>파일 쓰기 시 <code class="cause-inline">encoding='utf-8'</code> 미지정</h4>
+            <p>
+              Windows 환경에서 Python의 <code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">open()</code>
+              함수는 기본 인코딩으로 시스템 로케일(CP949/EUC-KR)을 사용합니다.
+              한국어 문자가 포함된 파일을 CP949로 인코딩 시 지원되지 않는 유니코드 문자가 존재하면
+              <code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">UnicodeEncodeError</code>가 발생합니다.
+              더 치명적인 문제는 <code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">open(path, 'w')</code>
+              호출 시점에 파일이 이미 truncate(빈 파일로 초기화)되므로,
+              이후 <code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">write()</code>에서 예외가 발생해도
+              원본 파일 내용은 이미 소실된다는 점입니다.
+            </p>
+          </div>
+        </li>
+
+        <li class="cause-item">
+          <div class="cause-num">2</div>
+          <div class="cause-content">
+            <h4>비원자적(Non-atomic) 파일 쓰기</h4>
+            <p>
+              원자적 쓰기란 임시 파일에 먼저 내용을 기록한 후,
+              성공 시에만 원본 파일에 rename하는 방식입니다.
+              이 패턴을 사용하지 않으면, 쓰기 도중 오류 발생 시
+              원본 파일이 파괴되거나 불완전한 상태가 됩니다.
+              Stage 3~4의 손상은 모두 비원자적 쓰기로 인해
+              원본 파일이 복구 불가능하게 손상된 사례입니다.
+            </p>
+          </div>
+        </li>
+
+        <li class="cause-item">
+          <div class="cause-num">3</div>
+          <div class="cause-content">
+            <h4>수정 전 기존 파일 내용 미확인 및 replace() 대상 미검증</h4>
+            <p>
+              <code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">str.replace(old, new)</code>
+              호출 전에 <code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">old</code>
+              문자열이 실제로 존재하는지 확인하지 않았습니다.
+              특히 빈 문자열(<code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">''</code>)은
+              Python에서 모든 문자 경계에 매칭되므로,
+              <code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">content.replace('', new_block)</code>은
+              파일 전체에 걸쳐 수만 번 삽입 연산을 수행하게 됩니다.
+              또한 수정 전 현재 파일 상태(인코딩, 내용 정합성)를 확인하는 단계가 누락되어 있었습니다.
+            </p>
+          </div>
+        </li>
+
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== 재발 방지 대책 ===== -->
+  <div class="card">
+    <div class="card-header">
+      <span>&#128737;</span> 재발 방지 대책
+    </div>
+    <div class="card-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>대책</th>
+              <th>설명</th>
+              <th>적용 상태</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1</strong></td>
+              <td><code style="background:#2d3748;color:#f6e05e;padding:2px 5px;border-radius:3px;font-size:0.82rem;">encoding='utf-8'</code> 항상 명시</td>
+              <td>모든 파일 I/O에서
+                <code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">open(path, 'w', encoding='utf-8')</code>
+                형태로 인코딩을 명시적으로 지정. Windows/Linux 환경 차이 무관하게 동작 보장.</td>
+              <td><span class="tag tag-green">&#10003; 적용됨</span></td>
+            </tr>
+            <tr>
+              <td><strong>2</strong></td>
+              <td>원자적 쓰기 (임시파일 후 rename)</td>
+              <td>임시 파일(<code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">.tmp</code>)에
+                먼저 저장 후 검증 통과 시
+                <code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">os.replace()</code>로
+                원자적 교체. 쓰기 실패 시 원본 파일 보존 보장.</td>
+              <td><span class="tag tag-green">&#10003; 적용됨</span></td>
+            </tr>
+            <tr>
+              <td><strong>3</strong></td>
+              <td>replace() 전 대상 문자열 존재 확인</td>
+              <td><code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">if target_str in content:</code>
+                조건 확인 후 replace 실행. 빈 문자열이나 None을 replace 대상으로 사용하는 코드 금지.</td>
+              <td><span class="tag tag-green">&#10003; 적용됨</span></td>
+            </tr>
+            <tr>
+              <td><strong>4</strong></td>
+              <td>수정 후 JS 문법 검증</td>
+              <td>파일 저장 후
+                <code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">async async</code>,
+                <code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">function function</code>
+                등 중복 키워드 및 백틱 홀수 여부를 정규식으로 자동 검사. 검증 실패 시 저장 중단.</td>
+              <td><span class="tag tag-green">&#10003; 적용됨</span></td>
+            </tr>
+            <tr>
+              <td><strong>5</strong></td>
+              <td><code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">index.html.backup</code> 상시 유지</td>
+              <td>배포 전 및 수정 직전 <code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">index.html.backup</code>
+                파일을 자동 생성.
+                <code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">restore_frontend.bat</code>
+                스크립트로 1초 내 복구 가능.</td>
+              <td><span class="tag tag-green">&#10003; 적용됨</span></td>
+            </tr>
+            <tr>
+              <td><strong>6</strong></td>
+              <td>검증 통과 후에만 사용자 안내</td>
+              <td>파일 수정 완료 메시지 출력 전에 반드시 파일 크기, 인코딩, JS 문법 검증 3단계를 통과해야 함.
+                실패 시 오류 메시지와 롤백 안내 출력.</td>
+              <td><span class="tag tag-green">&#10003; 적용됨</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 긴급 복구 방법 ===== -->
+  <div class="card">
+    <div class="card-header">
+      <span>&#128680;</span> 긴급 복구 방법
+    </div>
+    <div class="card-body">
+      <div class="alert alert-orange">
+        <span style="font-size:1.2rem;">&#9888;&#65039;</span>
+        <span><strong>index.html이 손상된 경우</strong> 아래 방법 중 하나를 사용하여 즉시 복구하세요.</span>
+      </div>
+      <ol class="recovery-steps">
+
+        <li class="recovery-step">
+          <div class="recovery-step-body">
+            <h4>restore_frontend.bat 실행 (권장)</h4>
+            <p>프로젝트 루트의
+              <code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">restore_frontend.bat</code>를
+              더블클릭하거나 CMD에서 실행합니다.
+              백업 파일(<code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">index.html.backup</code>)에서
+              자동 복원하며 인코딩 검증까지 수행합니다.
+            </p>
+            <div class="code-block" style="margin-top:8px;">
+<span class="c-gray">REM 프로젝트 루트에서 실행</span>
+<span class="c-green">restore_frontend.bat</span>
+            </div>
+          </div>
+        </li>
+
+        <li class="recovery-step">
+          <div class="recovery-step-body">
+            <h4>수동 복구: index.html.backup 복사</h4>
+            <p>백업 파일을 직접 복사하여 덮어쓰기합니다.</p>
+            <div class="code-block" style="margin-top:8px;">
+<span class="c-gray"># Windows CMD</span>
+copy frontend\index.html.backup frontend\index.html
+
+<span class="c-gray"># PowerShell / bash</span>
+cp frontend/index.html.backup frontend/index.html
+            </div>
+          </div>
+        </li>
+
+        <li class="recovery-step">
+          <div class="recovery-step-body">
+            <h4>브라우저 캐시 강제 새로고침</h4>
+            <p>파일 복구 후 브라우저에 이전 버전이 캐시되어 있을 수 있습니다.
+              <kbd style="background:#e2e8f0;padding:2px 6px;border-radius:3px;font-size:0.85rem;">Ctrl</kbd> +
+              <kbd style="background:#e2e8f0;padding:2px 6px;border-radius:3px;font-size:0.85rem;">Shift</kbd> +
+              <kbd style="background:#e2e8f0;padding:2px 6px;border-radius:3px;font-size:0.85rem;">R</kbd>
+              로 강제 새로고침하여 최신 파일을 불러옵니다.
+            </p>
+          </div>
+        </li>
+
+        <li class="recovery-step">
+          <div class="recovery-step-body">
+            <h4>파일 위치 확인</h4>
+            <p>관련 파일 경로 안내:</p>
+            <div class="code-block" style="margin-top:8px;">
+<span class="c-green">C:\Project\CDP-AI-Platform\</span>
+&#9500;&#9472;&#9472; <span class="c-yellow">frontend\</span>
+&#9474;   &#9500;&#9472;&#9472; <span class="c-blue">index.html</span>          <span class="c-gray"># 메인 파일</span>
+&#9474;   &#9492;&#9472;&#9472; <span class="c-blue">index.html.backup</span>   <span class="c-gray"># 백업 파일</span>
+&#9492;&#9472;&#9472; <span class="c-blue">restore_frontend.bat</span>    <span class="c-gray"># 복구 스크립트</span>
+            </div>
+          </div>
+        </li>
+
+      </ol>
+    </div>
+  </div>
+
+  <!-- ===== Claude Code 신뢰성 체크리스트 ===== -->
+  <div class="card">
+    <div class="card-header">
+      <span>&#9989;</span> Claude Code 신뢰성 체크리스트
+    </div>
+    <div class="card-body">
+      <p style="margin-bottom:16px; color:var(--text-muted); font-size:0.88rem;">
+        이번 인시던트를 통해 도출된 Claude Code 사용 시 파일 조작 안전 체크리스트입니다.
+      </p>
+      <ul class="checklist">
+        <li>
+          <span class="check-icon">&#10004;</span>
+          <span><strong>인코딩 명시</strong><br>모든 <code style="background:#2d3748;color:#f6e05e;padding:1px 4px;border-radius:3px;font-size:0.8rem;">open()</code>에
+            <code style="background:#2d3748;color:#f6e05e;padding:1px 4px;border-radius:3px;font-size:0.8rem;">encoding='utf-8'</code> 지정</span>
+        </li>
+        <li>
+          <span class="check-icon">&#10004;</span>
+          <span><strong>원자적 쓰기</strong><br>임시 파일 작성 후
+            <code style="background:#2d3748;color:#f6e05e;padding:1px 4px;border-radius:3px;font-size:0.8rem;">os.replace()</code>로 교체</span>
+        </li>
+        <li>
+          <span class="check-icon">&#10004;</span>
+          <span><strong>replace 전 확인</strong><br>대상 문자열 존재 여부 사전 검증</span>
+        </li>
+        <li>
+          <span class="check-icon">&#10004;</span>
+          <span><strong>파일 크기 검증</strong><br>저장 후 예상 크기 범위 내인지 확인</span>
+        </li>
+        <li>
+          <span class="check-icon">&#10004;</span>
+          <span><strong>JS 문법 검증</strong><br>중복 키워드, 괄호 짝수 여부 자동 체크</span>
+        </li>
+        <li>
+          <span class="check-icon">&#10004;</span>
+          <span><strong>백업 유지</strong><br>수정 전
+            <code style="background:#2d3748;color:#f6e05e;padding:1px 4px;border-radius:3px;font-size:0.8rem;">.backup</code>
+            파일 자동 생성</span>
+        </li>
+        <li>
+          <span class="check-icon">&#10004;</span>
+          <span><strong>롤백 준비</strong><br>오류 발생 시 즉시 복구 가능한 상태 유지</span>
+        </li>
+        <li>
+          <span class="check-icon">&#10004;</span>
+          <span><strong>검증 후 완료 안내</strong><br>모든 검증 통과 후에만 성공 메시지 출력</span>
+        </li>
+        <li>
+          <span class="check-icon">&#10004;</span>
+          <span><strong>한국어 콘텐츠 보존</strong><br>인코딩 변환 시 한국어 문자 손실 여부 확인</span>
+        </li>
+        <li>
+          <span class="check-icon">&#10004;</span>
+          <span><strong>수정 범위 최소화</strong><br>필요한 부분만 수정, 전체 파일 재작성 지양</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== 불필요한 시간 소요 분석 ===== -->
+  <div class="card">
+    <div class="card-header">
+      <span>&#9200;</span> 불필요한 시간 소요 분석
+    </div>
+    <div class="card-body">
+      <p style="margin-bottom:16px; color:var(--text-muted); font-size:0.88rem;">
+        이번 인시던트에서 예방 가능했음에도 발생한 불필요한 작업 단계를 분석합니다.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>단계</th>
+              <th>작업 내용</th>
+              <th>발생 원인</th>
+              <th>예방 가능 여부</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag tag-orange">Stage 3</span></td>
+              <td>40MB 팽창 파일 분석 및 정리</td>
+              <td><code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">replace('', ...)</code>
+                버그 — replace 전 대상 문자열 미검증</td>
+              <td><span class="tag tag-red">예방 가능</span></td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-red">Stage 4</span></td>
+              <td>0 bytes 파일 복구 시도</td>
+              <td><code style="background:#2d3748;color:#f6e05e;padding:1px 5px;border-radius:3px;font-size:0.82rem;">encoding</code>
+                미지정 + 비원자적 쓰기 → 원본 파괴</td>
+              <td><span class="tag tag-red">예방 가능</span></td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-purple">Stage 5</span></td>
+              <td>CP949 캐시에서 한국어 복원 작업</td>
+              <td>인코딩 불일치로 한국어 소실 → 재작업 필요</td>
+              <td><span class="tag tag-red">예방 가능</span></td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-blue">Stage 6</span></td>
+              <td>HTML 전면 재건</td>
+              <td>백업 파일 부재로 인해 초기부터 재작성 불가피</td>
+              <td><span class="tag tag-orange">부분 가능</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="lesson-box">
+        <strong>핵심 교훈</strong>
+        <br><br>
+        <strong>원자적 쓰기</strong>와 <strong>encoding='utf-8' 명시</strong>만 지켰다면
+        Stage 3~5 전체가 불필요한 단계였습니다.
+        <br><br>
+        단 두 줄의 코드 패턴 차이가 수 시간의 디버깅과 전면 재건 작업으로 이어졌습니다.
+        작은 습관 하나가 프로젝트 안정성의 핵심입니다.
+        <br><br>
+        <code style="background:rgba(255,255,255,0.15); padding:4px 10px; border-radius:4px; font-size:0.85rem; font-family:'Consolas','Monaco',monospace;">
+          with open(path, 'w', encoding='utf-8') as f:&nbsp;&nbsp;# 항상 이렇게
+        </code>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  CDP AI Platform &mdash; 인시던트 리포트 &mdash; 2026-03-16
+  <br>
+  본 문서는 동일한 오류의 재발 방지를 위해 작성되었습니다.
+</footer>
+
+</body>
+</html>
