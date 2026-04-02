@@ -1,10 +1,11 @@
 """
 Vector Store (Phase 3) — ChromaDB 기반 RAG
 회사 Reference 문서를 저장하고 문항별로 관련 내용을 검색한다.
+KnowledgeStore — 장기 지식베이스 (cdp_knowledge 컬렉션)
 """
 import logging
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -186,3 +187,135 @@ def get_vector_store() -> "VectorStore":
         _store = VectorStore()
         _store.load_reference_dir()
     return _store
+
+
+# ─────────────────────────────────────────────────────────────
+# KnowledgeStore — 장기 지식베이스 (cdp_knowledge 컬렉션)
+# ─────────────────────────────────────────────────────────────
+KNOWLEDGE_COLLECTION = "cdp_knowledge"
+
+
+class KnowledgeStore:
+    """장기 지식베이스 — ChromaDB 기반 의미 검색"""
+
+    def __init__(self):
+        self._client = None
+        self._collection = None
+        if HAS_CHROMADB:
+            self._init()
+
+    def _init(self):
+        try:
+            db_path = str(settings.BASE_DIR / "data" / "vector_db")
+            Path(db_path).mkdir(parents=True, exist_ok=True)
+            self._client = chromadb.PersistentClient(
+                path=db_path,
+                settings=ChromaSettings(anonymized_telemetry=False),
+            )
+            self._collection = self._client.get_or_create_collection(
+                name=KNOWLEDGE_COLLECTION,
+                metadata={"hnsw:space": "cosine"},
+            )
+            logger.info(f"KnowledgeStore 초기화 완료 ({self._collection.count()}개 청크)")
+        except Exception as e:
+            logger.error(f"KnowledgeStore 초기화 실패: {e}")
+
+    def add_chunks(self, doc_name: str, chunks: List[dict]) -> int:
+        """청크 리스트를 벡터 DB에 저장. 기존 동일 문서는 삭제 후 재저장."""
+        if not chunks:
+            return 0
+        # Delete existing chunks for this doc
+        self.delete_document(doc_name)
+
+        ids, texts, metas = [], [], []
+        for i, chunk in enumerate(chunks):
+            chunk_id = f"{doc_name}__chunk_{i}"
+            ids.append(chunk_id)
+            texts.append(chunk["text"])
+            metas.append({
+                "doc_name": doc_name,
+                "page": chunk.get("page", 0),
+                "chunk_index": i,
+            })
+
+        if self._collection is not None:
+            try:
+                # Batch add in groups of 100
+                batch = 100
+                for start in range(0, len(ids), batch):
+                    self._collection.upsert(
+                        ids=ids[start:start + batch],
+                        documents=texts[start:start + batch],
+                        metadatas=metas[start:start + batch],
+                    )
+                return len(ids)
+            except Exception as e:
+                logger.error(f"청크 저장 실패: {e}")
+                return 0
+        return 0
+
+    def search(self, query: str, n_results: int = 5) -> List[dict]:
+        if self._collection is None or self._collection.count() == 0:
+            return []
+        try:
+            actual_n = min(n_results, self._collection.count())
+            results = self._collection.query(query_texts=[query], n_results=actual_n)
+            output = []
+            for i, doc_id in enumerate(results["ids"][0]):
+                meta = results["metadatas"][0][i] if results.get("metadatas") else {}
+                output.append({
+                    "text": results["documents"][0][i],
+                    "doc_name": meta.get("doc_name", "unknown"),
+                    "page": meta.get("page", 0),
+                    "distance": results["distances"][0][i] if results.get("distances") else 1.0,
+                })
+            return output
+        except Exception as e:
+            logger.error(f"지식 검색 실패: {e}")
+            return []
+
+    def delete_document(self, doc_name: str):
+        if self._collection is None:
+            return
+        try:
+            results = self._collection.get(where={"doc_name": doc_name})
+            if results and results.get("ids"):
+                self._collection.delete(ids=results["ids"])
+        except Exception:
+            pass
+
+    def list_documents(self) -> List[dict]:
+        if self._collection is None:
+            return []
+        try:
+            all_data = self._collection.get()
+            doc_chunks: Dict[str, int] = {}
+            for meta in (all_data.get("metadatas") or []):
+                name = meta.get("doc_name", "unknown")
+                doc_chunks[name] = doc_chunks.get(name, 0) + 1
+            return [{"name": k, "chunks": v} for k, v in sorted(doc_chunks.items())]
+        except Exception as e:
+            logger.error(f"문서 목록 조회 실패: {e}")
+            return []
+
+    def get_stats(self) -> dict:
+        docs = self.list_documents()
+        return {
+            "total_chunks": self._collection.count() if self._collection else 0,
+            "total_docs": len(docs),
+            "chromadb_active": self._collection is not None,
+            "docs": docs,
+        }
+
+    def is_active(self) -> bool:
+        return self._collection is not None
+
+
+_knowledge_store: Optional["KnowledgeStore"] = None
+
+
+def get_knowledge_store() -> "KnowledgeStore":
+    global _knowledge_store
+    if _knowledge_store is None:
+        _knowledge_store = KnowledgeStore()
+    return _knowledge_store

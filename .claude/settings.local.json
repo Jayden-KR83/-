@@ -15,7 +15,6 @@
       "Bash(python -c \"from backend.api.routes import router; print\\(''routes OK''\\)\")",
       "Bash(python -c \"from backend.agents.answer_draft_agent import run_answer_draft_agent; print\\(''answer_draft_agent OK''\\)\")",
       "Bash(python -c \"from backend.main import app; print\\(''main app OK''\\)\")",
-      "Bash(powershell -Command \"Get-Content ''C:\\\\Users\\\\105415\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Project-CDP-AI-Platform\\\\dcc3f084-84c5-4396-9038-bc719afd618c\\\\tasks\\\\b4st2ztoh.output'' | Select-Object -Last 5\")",
       "Bash(powershell -Command \"Get-Content ''c:\\\\Project\\\\CDP-AI-Platform\\\\backend\\\\agents\\\\pdf_parser_agent.py''\")",
       "Bash(powershell -Command \"Get-Content ''c:\\\\Project\\\\CDP-AI-Platform\\\\backend\\\\core\\\\config.py''\")",
       "Bash(python -:*)",
@@ -69,10 +68,149 @@
       "Bash(cmd /c \"attrib c:\\\\Project\\\\CDP-AI-Platform\\\\.gitignore\")",
       "Bash(cmd /c \"attrib \"\"c:\\\\Project\\\\CDP-AI-Platform\\\\CLAUDE.md\"\" && echo ok\")",
       "Bash(python C:Tempfix_git_perms.py)",
-      "Bash(python 'C:\\\\Temp\\\\fix_git_perms.py')"
+      "Bash(python 'C:\\\\Temp\\\\fix_git_perms.py')",
+      "Bash(python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000)",
+      "Bash(python 'C:\\\\Temp\\\\patch_routes_batch.py')",
+      "Bash(powershell -ExecutionPolicy Bypass -File 'C:\\\\Temp\\\\restart_and_check.ps1')",
+      "Bash(powershell -ExecutionPolicy Bypass -Command \":*)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''backend/api/routes.py''\\).read\\(\\)\\); print\\(''routes.py OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''backend/core/config.py''\\).read\\(\\)\\); print\\(''config.py OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''backend/api/routes.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''routes.py OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''backend/core/config.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''config.py OK''\\)\")",
+      "Bash(Start-Sleep 3)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(''''Health:'''', d.get\\(''''status''''\\)\\)\")",
+      "Bash(python -c \"from backend.api.routes import router; paths = [r.path for r in router.routes]; print\\(''\\\\n''.join\\([p for p in paths if ''knowledge'' in p or ''chat'' in p]\\)\\)\")",
+      "Bash(powershell -ExecutionPolicy Bypass -Command \"Get-Process python -ErrorAction SilentlyContinue | Select-Object Id, CPU, WorkingSet | Format-Table\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(''''Status:'''', d.get\\(''''status''''\\)\\)\")",
+      "Bash(curl -s \"http://localhost:8000/api/v1/knowledge/list\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(''''Status:'''', d[''''status'''']\\)\")",
+      "Bash(python 'C:\\\\Temp\\\\patch_frontend_model.py')",
+      "Bash(python 'C:\\\\Temp\\\\patch_agent_order.py')",
+      "Bash(powershell -Command \"Get-Process python* | Stop-Process -Force -ErrorAction SilentlyContinue; Start-Sleep 2; Start-Process python -ArgumentList ''-m uvicorn backend.main:app --host 0.0.0.0 --port 8000'' -WorkingDirectory ''C:\\\\Project\\\\CDP-AI-Platform'' -WindowStyle Hidden\")",
+      "Bash(curl -s http://localhost:8000/api/v1/knowledge/stats)",
+      "Bash(python 'C:\\\\Temp\\\\patch_chat_modes.py')",
+      "Bash(python C:/Temp/patch_chat_modes.py)",
+      "Bash(cmd /c \"python C:\\\\Temp\\\\patch_chat_modes.py\")",
+      "Bash(powershell -Command \"python C:\\\\Temp\\\\patch_chat_modes.py\")",
+      "Bash(powershell -Command \"& { python C:\\\\Temp\\\\patch_chat_modes.py 2>&1 | Out-String }\")",
+      "Bash(powershell -ExecutionPolicy Bypass -Command \"python ''C:\\\\Temp\\\\patch_chat_modes.py''; Write-Host ''EXIT:'' $LASTEXITCODE\")",
+      "Bash(powershell -ExecutionPolicy Bypass -Command \"Start-Sleep 6; try { $r = Invoke-RestMethod ''http://localhost:8000/api/v1/health'' -TimeoutSec 8; Write-Host ''OK'' } catch { Write-Host ''FAIL'' }\")",
+      "Bash(powershell -ExecutionPolicy Bypass -Command \"try { $r = Invoke-RestMethod ''http://localhost:8000/api/v1/health'' -TimeoutSec 6; Write-Host ''Status:'' $r.status; Write-Host ''Model:'' $r.claude_api.model } catch { Write-Host ''ERROR:'' $_ }\")",
+      "Bash(cmd /c \"curl -s http://localhost:8000/api/v1/health\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\\\Temp\\\\check_health.ps1\")",
+      "Bash(powershell -ExecutionPolicy Bypass -Command \"Invoke-RestMethod ''''http://localhost:8000/api/v1/health''''\")",
+      "Bash(powershell -ExecutionPolicy Bypass -Command \"Start-Sleep 8; $conn = Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue; Write-Host ''Port:'' \\($conn -ne $null\\); Invoke-RestMethod ''http://localhost:8000/api/v1/crawl/presets''\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''backend/agents/crawl_agent.py''\\).read\\(\\)\\); print\\(''crawl_agent.py OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''backend/api/routes.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''backend/agents/cdp_auto_answer_module.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''module OK''\\)\")",
+      "Bash(powershell -ExecutionPolicy Bypass -Command \"Start-Sleep 8; Invoke-RestMethod ''http://localhost:8000/api/v1/cdp-answer/excel-list''\")",
+      "Bash(netsh advfirewall:*)",
+      "Bash(python -c \"import sys; print\\(sys.executable\\)\")",
+      "Bash(where python:*)",
+      "Bash(Start-Process wscript.exe -ArgumentList \"\"\"C:\\\\Project\\\\CDP-AI-Platform\\\\start_background.vbs\"\"\")",
+      "Bash(curl -s http://127.0.0.1:8000/api/v1/health)",
+      "Bash(powershell -Command \"New-NetFirewallRule -DisplayName ''CDP AI Platform 8000'' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8000 -Profile Any -Description ''CDP AI Platform FastAPI Server''\")",
+      "Bash(powershell -Command \"Get-NetFirewallRule | Where-Object {$_LocalPort -eq ''8000'' -or $_DisplayName -like ''*8000*''} | Select-Object DisplayName, Enabled, Direction, Action\")",
+      "Bash(powershell -Command \"netsh advfirewall firewall show rule name=''''CDP AI Platform 8000''''\")",
+      "Bash(tasklist /FI 'IMAGENAME eq python.exe' 2)",
+      "Bash(/dev/null netstat:*)",
+      "Bash(taskkill /F /IM python.exe)",
+      "Bash(powershell -Command \"Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_IPAddress -notlike ''127.*''} | Select-Object IPAddress, InterfaceAlias\")",
+      "Bash(powershell -Command \"ipconfig\")",
+      "Bash(powershell -Command ipconfig)",
+      "Bash(find c:/Project/CDP-AI-Platform/backend -name *.pyc -delete 2)",
+      "Bash(/dev/null find:*)",
+      "Bash(taskkill /F /PID 1960 /T 2)",
+      "Bash(1 sleep:*)",
+      "Bash(powershell -Command \"Stop-Process -Id 1960 -Force -ErrorAction SilentlyContinue; Start-Sleep 2; Test-NetConnection -ComputerName 127.0.0.1 -Port 8000 -WarningAction SilentlyContinue | Select-Object TcpTestSucceeded\")",
+      "Bash(python -c \"import json; d=json.load\\(open\\(''.claude/settings.local.json'', encoding=''utf-8''\\)\\); hooks=d[''hooks'']; print\\(''PostToolUse entries:'', len\\(hooks[''PostToolUse'']\\)\\); print\\(''Stop entries:'', len\\(hooks[''Stop'']\\)\\); [print\\(''PT hook:'', h[''hooks''][0][''command''][:60]\\) for h in hooks[''PostToolUse'']]; print\\(''Stop cmd:'', hooks[''Stop''][0][''hooks''][0][''command''][:60]\\)\")",
+      "Bash(python -c \"import socket; print\\(''''hostname:'''', socket.gethostname\\(\\)\\); print\\(''''IPs:''''\\); import subprocess; result = subprocess.run\\([''''ipconfig''''], capture_output=True, text=True, encoding=''''cp949''''\\); print\\(result.stdout\\)\")",
+      "Bash(tasklist /FI \"IMAGENAME eq python.exe\" /FO CSV)",
+      "Bash(tasklist /FI \"IMAGENAME eq pythonw.exe\" /FO CSV)",
+      "Bash(cmd /c \"tasklist | findstr python\")",
+      "Bash(cmd /c \"netstat -ano | findstr :8000\")",
+      "Bash(cmd /c \"schtasks /query /tn \"\"CDP*\"\" /fo LIST 2>&1 || schtasks /query /fo LIST | findstr /i CDP 2>&1\")",
+      "Bash(cmd /c \"type C:\\\\Project\\\\CDP-AI-Platform\\\\data\\\\server.log 2>nul | tail -20\")",
+      "Bash(python -c \"import uvicorn; print\\(''uvicorn OK''\\)\")",
+      "Bash(cmd /c \"where python\")",
+      "Bash(python -c \"from backend.main import app; print\\(''import OK''\\)\")",
+      "Bash(cmd /c \"schtasks /query /fo LIST /v 2>&1 | findstr /i /c:\"\"CDP\"\" /c:\"\"watchdog\"\" /c:\"\"Task Name\"\" /c:\"\"Status\"\" /c:\"\"Last Run\"\" /c:\"\"Next Run\"\" /c:\"\"Logon\"\" /c:\"\"Run As\"\"\")",
+      "Bash(cmd /c \"schtasks /query /fo CSV\")",
+      "Bash(cmd /c \"wmic process where \"\"name=''python.exe'' or name=''pythonw.exe''\"\" get ProcessId,CommandLine /format:csv 2>&1\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\\\Project\\\\CDP-AI-Platform\\\\register_task.ps1\")",
+      "Bash(cmd /c \"for /f \"\"tokens=5\"\" %a in \\(''netstat -ano ^| findstr :8000 ^| findstr LISTENING''\\) do taskkill /PID %a /F\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(''''OK -'''', d[''''server''''][''''access_urls'''']\\)\")",
+      "Bash(python -c \"import xlrd; print\\(''xlrd'', xlrd.__version__\\)\")",
+      "Bash(python -c \"import msoffcrypto; print\\(''msoffcrypto OK''\\)\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(''''server OK''''\\)\")",
+      "Bash(curl -s http://127.0.0.1:8000/api/v1/knowledge/docs)",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('server OK'\\)\")",
+      "Bash(curl -s -X GET http://127.0.0.1:8000/api/v1/knowledge/docs)",
+      "Bash(curl -s http://127.0.0.1:8000/api/v1/knowledge/list)",
+      "Bash(curl -s http://127.0.0.1:8000/api/v1/knowledge/stats)",
+      "Bash(cmd /c \"for /f \\\\\"tokens=5\\\\\" %a in \\('netstat -ano ^| findstr :8000 ^| findstr LISTENING'\\) do taskkill /PID %a /F\")",
+      "Bash(python -c ':*)",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('docs:', d.get\\('total'\\), '개'\\)\")",
+      "Bash(curl -s \"http://127.0.0.1:8000/api/v1/openapi.json\")",
+      "Bash(curl -s \"http://127.0.0.1:8000/openapi.json\")",
+      "Bash(python -c \"from backend.api.routes import router; routes = [\\(r.path, list\\(r.methods\\)\\) for r in router.routes if hasattr\\(r,'methods'\\)]; [print\\(p,m\\) for p,m in routes if 'knowledge' in p]\")",
+      "Bash(cmd /c \"taskkill /F /IM python.exe /T 2>nul & taskkill /F /IM pythonw.exe /T 2>nul\")",
+      "Bash(find c:/Project/CDP-AI-Platform/backend -name \"*.pyc\" -path \"*/routes*\" -delete)",
+      "Bash(xargs -I{} rm -rf {})",
+      "Bash(python -m uvicorn backend.main:app --host 0.0.0.0 --port 8001 --log-level error)",
+      "Bash(curl -s http://127.0.0.1:8001/api/v1/knowledge/docs)",
+      "Bash(python -m uvicorn backend.main:app --host 0.0.0.0 --port 8001)",
+      "Bash(curl -s \"http://127.0.0.1:8001/openapi.json\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(p,list\\(d['paths'][p].keys\\(\\)\\)\\) for p in d.get\\('paths',{}\\) if 'knowledge' in p]\")",
+      "Bash(cmd /c \"netstat -ano | findstr :8000 | findstr LISTENING\")",
+      "Bash(cmd /c \"netstat -ano | findstr :800\")",
+      "Bash(cmd /c \"wmic process where \\\\\"name like '%python%'\\\\\" get ProcessId,CommandLine 2>&1\")",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 8000 -State Listen | Select-Object LocalAddress,LocalPort,OwningProcess\")",
+      "Bash(powershell -Command \"Get-Process -Id 12716 | Select-Object Id,Name,Path,CommandLine\")",
+      "Bash(powershell -Command \"Stop-Process -Id 12716 -Force\")",
+      "Bash(powershell -Command \"Get-Process -Name python,pythonw -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('OK -', d['server']['access_urls']\\)\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('서버 OK'\\)\")"
     ],
     "additionalDirectories": [
-      "C:\\Temp"
+      "C:\\Temp",
+      "C:\\Users\\105415\\.claude\\projects\\c--Project-CDP-AI-Platform"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(jq -r '.tool_input.file_path // \"\"' 2>/dev/null); [[ \"$FILE\" == *.py ]] && python -c \"import ast; ast.parse(open('$FILE', encoding='utf-8').read()); print('Syntax OK: $FILE')\" 2>&1 || true",
+            "statusMessage": "Python 문법 검사 중..."
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(jq -r '.tool_input.file_path // \"\"' 2>/dev/null); echo \"$FILE\" | grep -qi 'routes\\.py' && powershell.exe -NonInteractive -WindowStyle Hidden -Command \"Start-Sleep 2; Stop-Process -Name python,pythonw -Force -ErrorAction SilentlyContinue; Start-Sleep 2; Start-Process pythonw.exe -ArgumentList 'C:\\\\Project\\\\CDP-AI-Platform\\\\server_watchdog.py' -WorkingDirectory 'C:\\\\Project\\\\CDP-AI-Platform' -WindowStyle Hidden; Write-Host 'CDP server restarted'\" && echo 'routes.py changed: server restarting...' || true",
+            "statusMessage": "routes.py 변경 감지 — 서버 재시작 중...",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\": \"[CHECK] CLAUDE.md / docs/*.md 업데이트 필요 여부 확인 — 새 기능 또는 아키텍처 결정사항이 있으면 문서를 갱신하세요.\"}'",
+            "statusMessage": "CLAUDE.md 업데이트 리마인더"
+          }
+        ]
+      }
     ]
   }
 }

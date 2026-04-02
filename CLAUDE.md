@@ -1,8 +1,8 @@
 ﻿# CDP AI Platform
 
 ## Phase Status
-- Phase 1: PDF Parsing + Excel Output (COMPLETE)
-- Phase 2: Auto-scoring Agent (PLANNED)
+- Phase 1: PDF Parsing + Excel Output (COMPLETE)  → docs/phase1_pdf_parser.md
+- Phase 2: CDP 답변 자동화 + 워크벤치 (COMPLETE)  → docs/phase2_cdp_workbench.md
 - Phase 3: Answer Draft Agent / RAG (PLANNED)
 
 ## Key Files

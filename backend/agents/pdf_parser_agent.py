@@ -783,89 +783,6 @@ def _classify_text_lines(text: str) -> List[Dict[str, str]]:
 # ===========================================================================
 # STAGE 3: Save Excel
 # ===========================================================================
-# ---------------------------------------------------------------------------
-# Korean translation helper
-# ---------------------------------------------------------------------------
-def _translate_to_korean(df_struct, source_file: str = ""):
-    import json as _json, os as _os
-    df_korean = df_struct.copy()
-    trans_cols = ["질문내용", "Sub질문", "Options",
-                  "Tags_항목", "Tags_내용"]
-    try:
-        import anthropic as _anth
-        import sys as _sys
-        _sys.path.insert(0, r'c:\Project\CDP-AI-Platform\backend')
-        _sys.path.insert(0, r'c:\Project\CDP-AI-Platform\backend\core')
-        from config import settings as _settings
-        client = _anth.Anthropic(api_key=_settings.ANTHROPIC_API_KEY)
-        model = "claude-haiku-4-5-20251001"
-    except Exception as e:
-        logger.warning("Translation unavailable: %s", e)
-        return df_korean
-
-    # Collect unique strings
-    texts = set()
-    for col in trans_cols:
-        if col not in df_struct.columns:
-            continue
-        for val in df_struct[col].dropna():
-            v = str(val).strip()
-            if not v or v.isdigit():
-                continue
-            if col == "Options":
-                for line in v.split("\n"):
-                    ls = line.strip()
-                    if ls and not ls.isdigit() and len(ls) <= 500:
-                        texts.add(ls)
-            elif len(v) <= 1500:
-                texts.add(v)
-
-    items = list(texts)
-    logger.info("Translating %d strings...", len(items))
-    translations = {}
-
-    def _do_batch(batch):
-        numbered = {str(i): t for i, t in enumerate(batch)}
-        prompt = (
-            "다음 CDP 설문지 텍스트를 영어에서 한국어로 번역하세요.\n"
-            "규칙: 불릿(•,●), 줄바꿈(\\n), 숫자, 코드는 그대로 유지. JSON만 출력.\n\n"
-            "입력:\n" + _json.dumps(numbered, ensure_ascii=False) + "\n\n"
-            "출력: {\"0\": \"...\", \"1\": \"...\"}"
-        )
-        try:
-            msg = client.messages.create(
-                model=model, max_tokens=4096,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            raw = msg.content[0].text.strip()
-            s, e = raw.find('{'), raw.rfind('}') + 1
-            if s >= 0 and e > s:
-                res = _json.loads(raw[s:e])
-                return {batch[int(k)]: v for k, v in res.items()
-                        if k.isdigit() and int(k) < len(batch)}
-        except Exception as ex:
-            logger.warning("Batch translate error: %s", ex)
-        return {}
-
-    batch_size = 40
-    for i in range(0, len(items), batch_size):
-        batch_result = _do_batch(items[i:i+batch_size])
-        translations.update(batch_result)
-
-    def _apply(val, col):
-        if not isinstance(val, str) or not val.strip():
-            return val
-        v = val.strip()
-        if col == "Options":
-            return "\n".join(translations.get(l.strip(), l.strip())
-                             for l in v.split("\n") if l.strip())
-        return translations.get(v, v)
-
-    for col in trans_cols:
-        if col in df_korean.columns:
-            df_korean[col] = df_korean[col].apply(lambda v: _apply(v, col))
-
-    return df_korean
 
 
 def _apply_structured_styles_to_sheet(writer, sheet_name: str, struct_rows: list) -> None:
@@ -954,18 +871,12 @@ def _save_faithful_excel(
         })
     df_struct = pd.DataFrame(struct_rows, columns=sq_columns) if struct_rows else pd.DataFrame(columns=sq_columns)
 
-    # Build Korean translation DataFrame
-    df_korean = _translate_to_korean(df_struct, source_file)
-
     with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
         df_struct.to_excel(writer, sheet_name="\uc9c8\ubb38_\uad6c\uc870\ud654", index=False)
-        df_korean.to_excel(writer, sheet_name="\uc9c8\ubb38_\uad6c\uc870\ud654_\ud55c\uae00", index=False)
 
         try:
             if HAS_OPENPYXL_STYLES and struct_rows:
                 _apply_structured_styles(writer, struct_rows)
-                _apply_structured_styles_to_sheet(
-                    writer, "\uc9c8\ubb38_\uad6c\uc870\ud654_\ud55c\uae00", struct_rows)
         except Exception as style_err:
             logger.warning("Excel style application failed: %s", str(style_err))
 

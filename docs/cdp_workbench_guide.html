@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CDP 답변 워크벤치 — 구현 가이드</title>
+<style>
+  :root {
+    --green:  #1a5c38;
+    --green2: #2d7a50;
+    --green3: #e8f5ee;
+    --amber:  #d97706;
+    --amber2: #fef3c7;
+    --blue:   #1d4ed8;
+    --blue2:  #dbeafe;
+    --red:    #dc2626;
+    --red2:   #fee2e2;
+    --gray1:  #111827;
+    --gray2:  #374151;
+    --gray3:  #6b7280;
+    --gray4:  #e5e7eb;
+    --gray5:  #f9fafb;
+    --border: #d1d5db;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    color: var(--gray1);
+    background: #fff;
+    line-height: 1.6;
+  }
+  a { color: var(--green2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ── Layout ── */
+  .sidebar {
+    position: fixed; top: 0; left: 0; width: 220px; height: 100vh;
+    background: var(--green); color: #fff; overflow-y: auto; padding: 0;
+  }
+  .sidebar-logo {
+    padding: 20px 16px 14px;
+    font-size: 13px; font-weight: 700; letter-spacing: .4px;
+    border-bottom: 1px solid rgba(255,255,255,.15);
+  }
+  .sidebar-logo span { opacity: .6; font-weight: 400; font-size: 11px; display: block; margin-top: 2px; }
+  .sidebar nav { padding: 12px 0; }
+  .sidebar nav a {
+    display: block; padding: 8px 20px; color: rgba(255,255,255,.8);
+    font-size: 13px; transition: background .15s;
+  }
+  .sidebar nav a:hover, .sidebar nav a.active {
+    background: rgba(255,255,255,.12); color: #fff; text-decoration: none;
+  }
+  .sidebar nav .section-label {
+    padding: 14px 20px 4px; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,.4);
+  }
+  .main { margin-left: 220px; padding: 40px 48px; max-width: 1000px; }
+
+  /* ── Headings ── */
+  h1 { font-size: 26px; font-weight: 700; color: var(--green); margin-bottom: 6px; }
+  h2 { font-size: 19px; font-weight: 700; color: var(--gray1); margin: 40px 0 14px; padding-bottom: 8px; border-bottom: 2px solid var(--green3); }
+  h3 { font-size: 15px; font-weight: 600; color: var(--gray2); margin: 22px 0 8px; }
+  .subtitle { color: var(--gray3); font-size: 14px; margin-bottom: 28px; }
+
+  /* ── Cards ── */
+  .card {
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px 24px; margin-bottom: 16px; background: #fff;
+  }
+  .card-green { background: var(--green3); border-color: #a7d9bb; }
+  .card-amber { background: var(--amber2); border-color: #fcd34d; }
+  .card-blue  { background: var(--blue2);  border-color: #93c5fd; }
+  .card-red   { background: var(--red2);   border-color: #fca5a5; }
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .card-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+
+  /* ── Flow diagram ── */
+  .flow {
+    display: flex; align-items: center; gap: 0; margin: 20px 0;
+    overflow-x: auto; padding-bottom: 4px;
+  }
+  .flow-step {
+    flex-shrink: 0; background: var(--green); color: #fff;
+    border-radius: 8px; padding: 12px 16px; text-align: center;
+    min-width: 120px; font-size: 13px;
+  }
+  .flow-step strong { display: block; font-size: 12px; opacity: .7; margin-bottom: 2px; }
+  .flow-arrow {
+    flex-shrink: 0; color: var(--gray3); font-size: 20px;
+    padding: 0 8px; user-select: none;
+  }
+  .flow-step.gray  { background: var(--gray4); color: var(--gray2); }
+  .flow-step.amber { background: var(--amber); }
+  .flow-step.blue  { background: var(--blue); }
+
+  /* ── Table ── */
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  th {
+    background: var(--green); color: #fff; padding: 9px 12px;
+    text-align: left; font-weight: 600; font-size: 12px;
+  }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--gray4); }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: var(--gray5); }
+
+  /* ── Badge ── */
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; letter-spacing: .3px;
+  }
+  .badge-green { background: var(--green3); color: var(--green); }
+  .badge-amber { background: var(--amber2); color: #92400e; }
+  .badge-red   { background: var(--red2);   color: var(--red); }
+  .badge-blue  { background: var(--blue2);  color: var(--blue); }
+  .badge-gray  { background: var(--gray4);  color: var(--gray2); }
+
+  /* ── Code block ── */
+  pre {
+    background: #1e293b; color: #e2e8f0; padding: 16px 20px;
+    border-radius: 8px; overflow-x: auto; font-size: 12px; line-height: 1.7;
+    margin: 10px 0;
+  }
+  code { font-family: 'Cascadia Code','Fira Code', monospace; }
+  .inline-code {
+    background: var(--gray4); color: var(--gray2);
+    padding: 1px 6px; border-radius: 4px; font-size: 12px; font-family: monospace;
+  }
+
+  /* ── Alert ── */
+  .alert {
+    border-left: 4px solid; padding: 12px 16px; border-radius: 0 8px 8px 0;
+    margin: 14px 0;
+  }
+  .alert-warn { border-color: var(--amber); background: var(--amber2); }
+  .alert-info { border-color: var(--blue);  background: var(--blue2); }
+  .alert-ok   { border-color: var(--green2);background: var(--green3); }
+  .alert-err  { border-color: var(--red);   background: var(--red2); }
+  .alert strong { display: block; margin-bottom: 4px; }
+
+  /* ── Phase banner ── */
+  .phase-banner {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--green); color: #fff; border-radius: 10px;
+    padding: 16px 20px; margin: 20px 0;
+  }
+  .phase-num {
+    background: rgba(255,255,255,.2); border-radius: 50%;
+    width: 36px; height: 36px; display: flex; align-items: center;
+    justify-content: center; font-weight: 700; font-size: 16px; flex-shrink: 0;
+  }
+  .phase-banner h3 { margin: 0; color: #fff; font-size: 15px; }
+  .phase-banner p  { margin: 2px 0 0; opacity: .8; font-size: 13px; }
+  .phase-banner.amber { background: var(--amber); }
+
+  /* ── Step list ── */
+  .steps { counter-reset: step; }
+  .step {
+    display: flex; gap: 16px; margin-bottom: 20px;
+    padding-bottom: 20px; border-bottom: 1px dashed var(--gray4);
+  }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    counter-increment: step;
+    flex-shrink: 0; width: 28px; height: 28px;
+    background: var(--green); color: #fff; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px;
+  }
+  .step-body h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .step-body p  { color: var(--gray3); font-size: 13px; }
+
+  /* ── Column map ── */
+  .col-chip {
+    display: inline-block; background: #1e293b; color: #7dd3fc;
+    padding: 1px 7px; border-radius: 4px; font-family: monospace; font-size: 12px;
+  }
+
+  /* ── HR ── */
+  hr { border: none; border-top: 1px solid var(--gray4); margin: 32px 0; }
+
+  /* ── Print / responsive ── */
+  @media print {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 20px; }
+  }
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 20px 16px; }
+    .card-grid, .card-grid3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ Sidebar ══════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    CDP AI Platform
+    <span>워크벤치 구현 가이드</span>
+  </div>
+  <nav>
+    <div class="section-label">개요</div>
+    <a href="#what">워크벤치란?</a>
+    <a href="#flow">전체 흐름</a>
+    <a href="#components">핵심 컴포넌트</a>
+
+    <div class="section-label">처리 로직</div>
+    <a href="#phase1">Phase 1 — 규칙 기반</a>
+    <a href="#phase2">Phase 2 — AI 초안</a>
+    <a href="#answer-types">답변 유형 분류</a>
+    <a href="#auto-levels">자동화 레벨</a>
+
+    <div class="section-label">데이터</div>
+    <a href="#excel">Excel 구조</a>
+    <a href="#colmap">열 매핑 (COL_MAP)</a>
+
+    <div class="section-label">사용법</div>
+    <a href="#howto">워크벤치 사용 순서</a>
+    <a href="#file-issue">파일 오류 해결</a>
+    <a href="#api">API 엔드포인트</a>
+  </nav>
+</aside>
+
+<!-- ══════════════════ Main ══════════════════ -->
+<main class="main">
+
+  <h1>CDP 답변 워크벤치</h1>
+  <p class="subtitle">cdp_master.xlsx 기반 AI 초안 생성 · 검수 · BX열 저장 — 구현 개념 상세 설명</p>
+
+  <!-- ─── 1. 워크벤치란? ─────────────────────────── -->
+  <section id="what">
+    <h2>워크벤치란?</h2>
+    <p>CDP(Carbon Disclosure Project) 설문 응답을 <strong>최대한 자동화</strong>하는 도구입니다.<br>
+    담당자가 매년 수백 개의 문항을 수작업으로 작성하는 대신, AI가 초안을 생성하고 담당자는 검수·수정만 하도록 설계됐습니다.</p>
+
+    <div class="card-grid" style="margin-top:16px">
+      <div class="card">
+        <h3>📋 입력</h3>
+        <p><code class="inline-code">cdp_master.xlsx</code> — CDP 공식 Comm. Tool SKEP 시트.<br>
+        문항 정의, 채점 기준, 전년도 답변이 모두 포함된 마스터 파일.</p>
+      </div>
+      <div class="card">
+        <h3>📤 출력</h3>
+        <p>BX열(2025 CDP 1st_Ans.) 자동 채우기.<br>
+        최종 확정 답변은 CB열(Final_Ans.)에 저장.<br>
+        처리 결과 요약 통계 + 검수 목록 제공.</p>
+      </div>
+    </div>
+
+    <div class="card card-green">
+      <strong>목표 자동화율</strong>
+      <p style="margin-top:6px">
+        <span class="badge badge-green">Phase 1 — 규칙 기반</span> Close 스킵 + 전년도 복사 → <strong>약 40~50%</strong><br>
+        <span class="badge badge-amber">Phase 2 — AI 초안</span> Claude API 생성 포함 → <strong>약 70~80%</strong>
+      </p>
+    </div>
+  </section>
+
+  <!-- ─── 2. 전체 흐름 ─────────────────────────────── -->
+  <section id="flow">
+    <h2>전체 처리 흐름</h2>
+
+    <div class="flow">
+      <div class="flow-step"><strong>1</strong>Excel 업로드</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><strong>2</strong>문항 로드</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step amber"><strong>3</strong>유형 분류</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><strong>4</strong>Phase 1<br>규칙 적용</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step blue"><strong>5</strong>Phase 2<br>AI 생성</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step gray"><strong>6</strong>검수·수정</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><strong>7</strong>BX 저장</div>
+    </div>
+
+    <table>
+      <tr><th>단계</th><th>담당</th><th>설명</th></tr>
+      <tr>
+        <td><strong>1. Excel 업로드</strong></td>
+        <td>담당자</td>
+        <td><code class="inline-code">data/reference/</code> 폴더에 저장. 최초 1회 또는 파일 교체 시</td>
+      </tr>
+      <tr>
+        <td><strong>2. 문항 로드</strong></td>
+        <td>ExcelDataLoader</td>
+        <td>Comm. Tool_SKEP 시트 4행부터 파싱 → <code class="inline-code">CDPQuestion</code> 객체 리스트 생성</td>
+      </tr>
+      <tr>
+        <td><strong>3. 유형 분류</strong></td>
+        <td>AnswerTypeClassifier</td>
+        <td>BV열(Sub_Q_Op) 패턴 분석 → 9가지 답변 유형 + 3단계 자동화 레벨 결정</td>
+      </tr>
+      <tr>
+        <td><strong>4. Phase 1</strong></td>
+        <td>RuleBasedEngine</td>
+        <td>Close(X) 스킵, 전년도 복사, 고정값 적용. 비용 0원, 즉시 처리</td>
+      </tr>
+      <tr>
+        <td><strong>5. Phase 2</strong></td>
+        <td>AIAnswerGenerator</td>
+        <td>Phase 1에서 처리 못한 문항을 Claude API로 초안 생성 (enable_ai=True 시)</td>
+      </tr>
+      <tr>
+        <td><strong>6. 검수</strong></td>
+        <td>담당자</td>
+        <td>워크벤치 UI에서 문항별로 AI 초안 확인·수정</td>
+      </tr>
+      <tr>
+        <td><strong>7. BX/CB 저장</strong></td>
+        <td>ExcelSaver</td>
+        <td>확정 답변을 원본 Excel BX열 또는 CB열에 직접 기록</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- ─── 3. 핵심 컴포넌트 ─────────────────────────── -->
+  <section id="components">
+    <h2>핵심 컴포넌트</h2>
+    <div class="card-grid3">
+      <div class="card">
+        <h3>📦 CDPQuestion</h3>
+        <p>문항 1행 = 1 객체.<br>질문 텍스트, 선택지, 채점 기준, 전년도 답변, 현재 답변 등 모든 필드 포함.</p>
+        <p style="margin-top:8px; font-size:12px; color:var(--gray3)">backend/agents/cdp_auto_answer_module.py</p>
+      </div>
+      <div class="card">
+        <h3>🔍 AnswerTypeClassifier</h3>
+        <p>BV열의 텍스트 패턴으로 답변 유형 분류.<br>e.g. "Select all that apply" → MULTI_SELECT</p>
+        <p style="margin-top:8px; font-size:12px; color:var(--gray3)">classify() + determine_auto_level()</p>
+      </div>
+      <div class="card">
+        <h3>⚙️ RuleBasedEngine</h3>
+        <p>Phase 1 규칙 엔진.<br>Close 스킵, 전년도 복사, 회사 고정값(LEI 등).<br>신뢰도 1.0, 비용 0원.</p>
+      </div>
+      <div class="card">
+        <h3>🤖 AIAnswerGenerator</h3>
+        <p>Phase 2 AI 엔진.<br>Claude에게 질문+채점 기준+전년도 답변을 넘겨 초안 생성.</p>
+        <p style="margin-top:8px; font-size:12px; color:var(--gray3)">get_claude_client() 연동</p>
+      </div>
+      <div class="card">
+        <h3>📊 ExcelDataLoader</h3>
+        <p>Excel 파싱 전담 클래스.<br>COL_MAP 기반으로 열 인덱스를 필드에 매핑.<br>XLS/XLSX 자동 감지 변환 포함.</p>
+      </div>
+      <div class="card">
+        <h3>🎛️ CDPAutoAnswerOrchestrator</h3>
+        <p>Phase 1→2 순서 제어.<br>문항별로 Phase 1 시도 → 실패 시 Phase 2 → 결과 집계.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- ─── 4. Phase 1 ───────────────────────────────── -->
+  <section id="phase1">
+    <h2>Phase 1 — 규칙 기반 엔진</h2>
+
+    <div class="phase-banner">
+      <div class="phase-num">1</div>
+      <div>
+        <h3>RuleBasedEngine</h3>
+        <p>API 비용 0원 · 즉시 처리 · 신뢰도 1.0</p>
+      </div>
+    </div>
+
+    <h3>처리 우선순위</h3>
+    <table>
+      <tr><th>#</th><th>조건</th><th>처리 방법</th><th>신뢰도</th></tr>
+      <tr>
+        <td>1</td>
+        <td>BQ열 = "X" (Close 문항)</td>
+        <td>빈 문자열 반환 (건너뜀)</td>
+        <td><span class="badge badge-green">1.0</span></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>고정 q_no ([1.1], [1.2] 등)</td>
+        <td>COMPANY_PROFILE에서 값 반환<br><small>언어=English, 통화=KRW, LEI 등</small></td>
+        <td><span class="badge badge-green">1.0</span></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>전년도 답변 있음 + Change = "No change" + 선택/수치형</td>
+        <td>전년도 답변 그대로 복사</td>
+        <td><span class="badge badge-green">0.95+</span></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>나머지 (텍스트형, 변경 있음 등)</td>
+        <td>None 반환 → Phase 2 위임</td>
+        <td>—</td>
+      </tr>
+    </table>
+
+    <div class="alert alert-info">
+      <strong>💡 Phase 1만으로 약 40~50% 자동 처리됩니다.</strong>
+      먼저 <code class="inline-code">enable_ai=False</code> 로 실행해 결과를 확인하세요. 비용 발생 없습니다.
+    </div>
+  </section>
+
+  <!-- ─── 5. Phase 2 ───────────────────────────────── -->
+  <section id="phase2">
+    <h2>Phase 2 — AI 초안 생성 엔진</h2>
+
+    <div class="phase-banner amber">
+      <div class="phase-num">2</div>
+      <div>
+        <h3>AIAnswerGenerator</h3>
+        <p>Claude API 사용 · enable_ai=True 시 활성화 · API 비용 발생</p>
+      </div>
+    </div>
+
+    <h3>Claude에게 전달하는 정보</h3>
+    <table>
+      <tr><th>항목</th><th>Excel 열</th><th>내용</th></tr>
+      <tr><td>메인 질문 (영문)</td><td><span class="col-chip">U</span></td><td>CDP 공식 질문 텍스트</td></tr>
+      <tr><td>메인 질문 (한국어)</td><td><span class="col-chip">T</span></td><td>한국어 번역본</td></tr>
+      <tr><td>서브 질문</td><td><span class="col-chip">BT/BU</span></td><td>세부 항목 설명</td></tr>
+      <tr><td>선택지</td><td><span class="col-chip">BV/BW</span></td><td>답변 가능한 옵션 목록</td></tr>
+      <tr><td>채점 기준</td><td><span class="col-chip">W/Y/AA/AC</span></td><td>D/A/M/L 등급 기준 (있는 경우)</td></tr>
+      <tr><td>전년도 답변</td><td><span class="col-chip">BZ</span></td><td>2024년 제출 내용 (참고용)</td></tr>
+      <tr><td>변경 사항</td><td><span class="col-chip">BI</span></td><td>전년 대비 달라진 내용</td></tr>
+      <tr><td>회사 컨텍스트</td><td>UI 입력</td><td>담당자가 직접 입력한 회사 특이사항</td></tr>
+    </table>
+
+    <h3>생성 결과</h3>
+    <ul style="padding-left:20px; line-height:2">
+      <li>AI 초안 텍스트</li>
+      <li>신뢰도 점수 (0.0 ~ 1.0)</li>
+      <li><code class="inline-code">AutoLevel.AI_DRAFT</code> 태그 → 워크벤치에서 ⚡ 표시</li>
+    </ul>
+  </section>
+
+  <!-- ─── 6. 답변 유형 ─────────────────────────────── -->
+  <section id="answer-types">
+    <h2>답변 유형 분류 (AnswerType)</h2>
+    <p>BV열(영문 선택지) 텍스트 패턴을 정규식으로 분석합니다.</p>
+
+    <table>
+      <tr><th>유형</th><th>패턴 예시</th><th>처리 특성</th></tr>
+      <tr>
+        <td><span class="badge badge-gray">SINGLE_SELECT</span></td>
+        <td>"Select from: ..."</td>
+        <td>한 개 선택. 전년도 복사 가능</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-gray">MULTI_SELECT</span></td>
+        <td>"Select all that apply"</td>
+        <td>여러 개 선택. 전년도 복사 가능</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-blue">TEXT_SHORT</span></td>
+        <td>"Text field [max 1500 chars]"</td>
+        <td>≤1500자 텍스트. AI 초안 대상</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-blue">TEXT_LONG</span></td>
+        <td>"Text field [max 5000 chars]"</td>
+        <td>>1500자. AI 초안 + 상세 검수 필요</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-gray">NUMERICAL</span></td>
+        <td>"Numerical field", "enter a number"</td>
+        <td>숫자 입력. 전년도 복사 가능</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-gray">PERCENTAGE</span></td>
+        <td>"Percentage field"</td>
+        <td>% 입력. 전년도 복사 가능</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-gray">DATE</span></td>
+        <td>"[DD/MM/YYYY]"</td>
+        <td>날짜 입력. 전년도 복사 가능</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-amber">ATTACHMENT</span></td>
+        <td>"[Attachment ..."</td>
+        <td>파일 첨부. 수작업 필수</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-red">SKIP</span></td>
+        <td>BQ열 = "X" 또는 옵션 없음</td>
+        <td>제출 불필요 문항. 자동 스킵</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- ─── 7. 자동화 레벨 ───────────────────────────── -->
+  <section id="auto-levels">
+    <h2>자동화 레벨 (AutoLevel)</h2>
+    <p>문항마다 처리 방식과 검수 필요 여부가 결정됩니다.</p>
+
+    <div class="card-grid3">
+      <div class="card card-green">
+        <div style="font-size:22px; margin-bottom:6px">🟢</div>
+        <h3>FULL_AUTO</h3>
+        <p>신뢰도 ≥ 0.95.<br>담당자 검수 없이 자동 저장 가능.<br><br>
+        <em>대상: Close 문항, 변경 없는 선택/수치형</em></p>
+      </div>
+      <div class="card card-amber">
+        <div style="font-size:22px; margin-bottom:6px">🟡</div>
+        <h3>AI_DRAFT</h3>
+        <p>AI가 초안 생성.<br>담당자 검수 후 저장 권장.<br><br>
+        <em>대상: 텍스트형, 전년도 있는 장문</em></p>
+      </div>
+      <div class="card card-red">
+        <div style="font-size:22px; margin-bottom:6px">🔴</div>
+        <h3>MANUAL_REQUIRED</h3>
+        <p>자동화 불가.<br>담당자가 직접 입력해야 함.<br><br>
+        <em>대상: 첨부파일, 전년도 없는 신규 장문</em></p>
+      </div>
+    </div>
+
+    <h3>워크벤치 UI에서의 표시</h3>
+    <table>
+      <tr><th>레벨</th><th>UI 표시</th><th>BX 저장 조건</th></tr>
+      <tr>
+        <td><span class="badge badge-green">FULL_AUTO</span></td>
+        <td>초록색, "자동" 배지</td>
+        <td>신뢰도 ≥ 0.9 → 일괄 저장 가능</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-amber">AI_DRAFT</span></td>
+        <td>노란색 ⚡, "검수 필요" 배지</td>
+        <td>담당자 승인 후 개별 저장</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-red">MANUAL</span></td>
+        <td>빨간색, "수작업" 배지</td>
+        <td>UI에서 직접 입력 후 저장</td>
+      </tr>
+    </table>
+  </section>
+
+  <hr>
+
+  <!-- ─── 8. Excel 구조 ─────────────────────────────── -->
+  <section id="excel">
+    <h2>Excel 파일 구조</h2>
+
+    <div class="card card-blue">
+      <strong>시트명: <code>Comm. Tool_SKEP</code></strong>
+      <p style="margin-top:4px">1~3행: 헤더 (스킵). 4행부터 실제 문항 데이터.</p>
+    </div>
+
+    <h3>주요 열 구역</h3>
+    <table>
+      <tr><th>구역</th><th>열 범위</th><th>내용</th></tr>
+      <tr>
+        <td>문항 기본 정보</td>
+        <td><span class="col-chip">A~C</span> <span class="col-chip">R</span> <span class="col-chip">T~U</span></td>
+        <td>순번, Q_No, Level, 질문 유형, 한/영 질문</td>
+      </tr>
+      <tr>
+        <td>채점 기준</td>
+        <td><span class="col-chip">W</span> <span class="col-chip">Y</span> <span class="col-chip">AA</span> <span class="col-chip">AC</span></td>
+        <td>D(Disclosure)/A(Awareness)/M(Management)/L(Leadership) 기준</td>
+      </tr>
+      <tr>
+        <td>CDP 공식 채점 분모/분자</td>
+        <td><span class="col-chip">AF~AM</span></td>
+        <td>D_Den/A_Den/M_Den/L_Den + D_Num/A_Num/M_Num/L_Num</td>
+      </tr>
+      <tr>
+        <td>부가 정보</td>
+        <td><span class="col-chip">BG</span> <span class="col-chip">BI</span> <span class="col-chip">BK</span> <span class="col-chip">BM</span> <span class="col-chip">BO</span></td>
+        <td>Dependencies, Change, Rationale, Ambition, Response_options</td>
+      </tr>
+      <tr>
+        <td>서브 질문 / 답변</td>
+        <td><span class="col-chip">BQ~CC</span></td>
+        <td>Open/Close, Sub Q, 선택지, <strong>BX=1st_Ans</strong>, BZ=전년도, CB=Final</td>
+      </tr>
+    </table>
+
+    <h3>핵심 열 상세</h3>
+    <table>
+      <tr><th>열</th><th>필드명</th><th>역할</th></tr>
+      <tr><td><span class="col-chip">BQ</span></td><td>open_close</td><td>"X" = Close 문항 → 자동 스킵</td></tr>
+      <tr><td><span class="col-chip">BV</span></td><td>sub_q_options</td><td>답변 유형 분류 기준 텍스트</td></tr>
+      <tr><td><span class="col-chip">BX</span></td><td>current_answer</td><td>★ <strong>자동화 대상</strong>. 1st Answer 저장 위치</td></tr>
+      <tr><td><span class="col-chip">BZ</span></td><td>prev_year_answer</td><td>전년도(2024) 답변. Phase 1 복사 소스</td></tr>
+      <tr><td><span class="col-chip">CB</span></td><td>final_answer</td><td>최종 확정 답변 저장 위치</td></tr>
+      <tr><td><span class="col-chip">BI</span></td><td>change_status</td><td>"No change" → 전년도 그대로 복사 가능</td></tr>
+    </table>
+  </section>
+
+  <!-- ─── 9. 열 매핑 ───────────────────────────────── -->
+  <section id="colmap">
+    <h2>COL_MAP — 열 인덱스 매핑</h2>
+    <p>Excel 열은 0-based 인덱스로 매핑됩니다. <strong>Excel 파일 구조가 바뀌면 이 매핑만 수정</strong>하면 됩니다.</p>
+
+    <pre><code>COL_MAP = {
+    "order":            0,   # A  순번
+    "q_no":             1,   # B  Q_No.
+    "level":            2,   # C  Lv.
+    "q_type":           17,  # R  질문 유형
+    "main_question_kr": 19,  # T  K_Q_Des. (한국어)
+    "main_question":    20,  # U  Q_Des.   (영어)
+    "scoring_dc":       22,  # W  DC
+    "scoring_ac":       24,  # Y  AC
+    "scoring_mc":       26,  # AA MC
+    "scoring_lc":       28,  # AC LC
+    "d_den_cdp":        31,  # AF
+    ...
+    "open_close":       68,  # BQ  ← X이면 스킵
+    "sub_q_options":    73,  # BV  ← 유형 분류 기준
+    "current_answer":   75,  # BX  ← 자동화 저장 대상
+    "prev_answer":      77,  # BZ  ← 전년도 답변
+    "final_answer":     79,  # CB  ← 최종 저장
+}</code></pre>
+
+    <div class="alert alert-warn">
+      <strong>⚠️ 열 매핑 오류 시</strong>
+      CDP가 Comm. Tool을 업데이트하면 열 번호가 바뀔 수 있습니다.<br>
+      업로드 후 반드시 <code class="inline-code">POST /cdp-answer/verify-columns</code> API로 매핑을 검증하세요.
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- ─── 10. 워크벤치 사용법 ──────────────────────── -->
+  <section id="howto">
+    <h2>워크벤치 사용 순서</h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>Excel 파일 업로드</h4>
+          <p>CDP 워크벤치 팝업 → Excel 파일 선택 → <strong>문항 로드</strong> 버튼.<br>
+          또는 드롭다운에서 기업 업로드된 파일 선택.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>문항 목록 확인</h4>
+          <p>로드 완료 후 Q_No 검색, 유형 필터, 상태 필터로 원하는 문항 탐색.<br>
+          통계 표시: 전체 / Open / 답변완료 / 미완료 / 채점항목 수.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>(선택) Phase 1만 먼저 실행</h4>
+          <p><code class="inline-code">enable_ai=False</code>로 규칙 기반만 실행.<br>
+          API 비용 없이 Close 스킵 + 전년도 복사 결과 미리 확인.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h4>개별 문항 AI 초안 생성</h4>
+          <p>문항 카드의 <strong>⚡ AI 초안 생성</strong> 버튼 클릭.<br>
+          Claude가 채점 기준 + 전년도 답변 + 회사 컨텍스트를 바탕으로 초안 작성.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <h4>초안 검수 및 수정</h4>
+          <p>생성된 초안 텍스트를 편집.<br>
+          채점 기준(D/A/M/L) 패널 참고하며 내용 보완.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <h4>BX열 저장</h4>
+          <p><strong>BX 저장</strong> 버튼 → <code class="inline-code">POST /cdp-answer/save-answer</code> API 호출.<br>
+          원본 Excel BX열(2025 CDP 1st_Ans.)에 답변 직접 기록.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── 11. 파일 오류 해결 ───────────────────────── -->
+  <section id="file-issue">
+    <h2>파일 오류 해결</h2>
+
+    <div class="alert alert-err">
+      <strong>❌ 로드 실패: File is not a zip file</strong>
+      이 오류는 업로드한 xlsx 파일이 실제로는 구형 XLS(OLE2) 포맷이거나,<br>
+      <strong>Microsoft Information Protection(MIP) 감도 레이블 암호화</strong>가 적용된 파일일 때 발생합니다.
+    </div>
+
+    <h3>원인 1: 구형 .xls 포맷 (확장자만 .xlsx)</h3>
+    <p>Excel 97-2003 형식으로 저장된 파일. 코드에서 자동 변환을 시도하지만, 일부 암호화 파일은 불가합니다.</p>
+
+    <h3>원인 2: MIP 감도 레이블 암호화 (현재 해당)</h3>
+    <p>파일 내부가 <code class="inline-code">EncryptedPackage</code> 스트림으로 래핑되어 Python이 읽을 수 없습니다.<br>
+    Excel을 통해서만 복호화 가능 (Office 365 계정 인증 필요).</p>
+
+    <div class="card card-green" style="margin-top:14px">
+      <h3>✅ 해결 방법</h3>
+      <ol style="padding-left:20px; line-height:2.2">
+        <li>Excel에서 <code class="inline-code">cdp_master.xlsx</code> 열기</li>
+        <li><strong>파일 → 다른 이름으로 저장</strong> 클릭</li>
+        <li>파일명: <code class="inline-code">cdp_master_plain.xlsx</code></li>
+        <li>저장 시 민감도 레이블을 <strong>"일반(General)"</strong>으로 변경 (또는 레이블 없이 저장)</li>
+        <li>저장된 파일을 워크벤치에 업로드</li>
+      </ol>
+      <p style="margin-top:8px; color:var(--gray3)">
+        레이블 변경 권한이 없으면: 파일 → 내보내기 → 통합 문서 사본 만들기 로 시도
+      </p>
+    </div>
+  </section>
+
+  <!-- ─── 12. API 엔드포인트 ───────────────────────── -->
+  <section id="api">
+    <h2>API 엔드포인트</h2>
+
+    <table>
+      <tr><th>메서드</th><th>경로</th><th>설명</th></tr>
+      <tr>
+        <td><span class="badge badge-blue">GET</span></td>
+        <td><code class="inline-code">/cdp-answer/excel-list</code></td>
+        <td>data/reference/ 폴더의 Excel 파일 목록 반환</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">POST</span></td>
+        <td><code class="inline-code">/cdp-answer/upload-excel</code></td>
+        <td>Excel 파일 업로드 (multipart/form-data)</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">POST</span></td>
+        <td><code class="inline-code">/cdp-answer/verify-columns</code></td>
+        <td>COL_MAP ↔ 실제 열 헤더 정합성 검증</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">POST</span></td>
+        <td><code class="inline-code">/cdp-answer/questions</code></td>
+        <td>전체 문항 목록 + 통계 반환</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">POST</span></td>
+        <td><code class="inline-code">/cdp-answer/generate-single</code></td>
+        <td>개별 문항 AI 초안 생성 (row_idx 지정)</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">POST</span></td>
+        <td><code class="inline-code">/cdp-answer/save-answer</code></td>
+        <td>답변을 Excel BX 또는 CB열에 저장</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">POST</span></td>
+        <td><code class="inline-code">/cdp-answer/run</code></td>
+        <td>전체 문항 일괄 자동 생성 (Phase 1+2)</td>
+      </tr>
+    </table>
+
+    <h3>예시: 문항 로드</h3>
+    <pre><code>POST /api/v1/cdp-answer/questions
+{
+  "excel_filename": "cdp_master.xlsx",
+  "sheet_name": "Comm. Tool_SKEP"
+}
+
+→ Response:
+{
+  "status": "ok",
+  "stats": { "total": 450, "open": 312, "answered": 87, "unanswered": 225 },
+  "questions": [ { "q_no": "[1.1]", "answer_type": "single_select", ... } ]
+}</code></pre>
+
+    <h3>예시: 개별 AI 초안 생성</h3>
+    <pre><code>POST /api/v1/cdp-answer/generate-single
+{
+  "excel_filename": "cdp_master.xlsx",
+  "row_idx": 5,
+  "company_context": "SK에코플랜트, 환경 엔지니어링 전문 기업"
+}
+
+→ Response:
+{
+  "status": "ok",
+  "answer": "SK에코플랜트는 2025년 기준 ...",
+  "confidence": 0.82,
+  "auto_level": "ai_draft"
+}</code></pre>
+  </section>
+
+  <hr>
+
+  <div class="card" style="background:var(--gray5); text-align:center; color:var(--gray3); font-size:12px; padding: 14px;">
+    CDP AI Platform — Phase 2 워크벤치 구현 가이드 · 2026-03-31
+  </div>
+  <div style="height:60px"></div>
+
+</main>
+
+<script>
+  // 스크롤 시 사이드바 활성화
+  const sections = document.querySelectorAll('section[id]');
+  const links = document.querySelectorAll('.sidebar nav a[href^="#"]');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const a = document.querySelector(`.sidebar nav a[href="#${e.target.id}"]`);
+        if (a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => obs.observe(s));
+</script>
+
+</body>
+</html>

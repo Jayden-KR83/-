@@ -43,6 +43,7 @@ class Settings:
     UPLOAD_DIR: Path = BASE_DIR / os.getenv("UPLOAD_DIR", "data/uploads")
     OUTPUT_DIR: Path = BASE_DIR / os.getenv("OUTPUT_DIR", "data/outputs")
     REFERENCE_DIR: Path = BASE_DIR / os.getenv("REFERENCE_DIR", "data/reference")
+    KNOWLEDGE_DIR: Path = BASE_DIR / os.getenv("KNOWLEDGE_DIR", "data/knowledge")
     SKILLS_DIR: Path = BASE_DIR / "skills"
 
     def validate(self) -> list[str]:
