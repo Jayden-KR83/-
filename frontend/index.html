@@ -536,112 +536,127 @@
       <div class="banner-desc">CDP &#xAC00;&#xC774;&#xB4DC; PDF &#xD30C;&#xC2F1;&#xBD80;&#xD130; &#xC790;&#xB3D9; &#xCC44;&#xC810;, &#xB2F5;&#xBCC0; &#xCD08;&#xC548; &#xC791;&#xC131;&#xAE4C;&#xC9C0; &mdash; ESG &#xC5C5;&#xBB34;&#xC758; &#xD575;&#xC2EC; &#xACF5;&#xC218;&#xB97C; AI&#xB85C; &#xC790;&#xB3D9;&#xD654;&#xD569;&#xB2C8;&#xB2E4;.</div>
       <div class="banner-stats">
         <div class="banner-stat">
-          <div class="stat-value">3</div>
-          <div class="stat-label">&#xD575;&#xC2EC; Agent</div>
+          <div class="stat-value">4</div>
+          <div class="stat-label">Agent Modules</div>
         </div>
         <div class="banner-stat">
           <div class="stat-value">1,000+</div>
-          <div class="stat-label">&#xCC98;&#xB9AC; &#xBB38;&#xD56D; &#xC218;</div>
+          <div class="stat-label">처리 문항 수</div>
         </div>
         <div class="banner-stat">
-          <div class="stat-value">~80%</div>
-          <div class="stat-label">&#xC5C5;&#xBB34; &#xC808;&#xAC10; &#xBAA9;&#xD45C;</div>
+          <div class="stat-value">~70%</div>
+          <div class="stat-label">업무 절감 목표</div>
         </div>
         <div class="banner-stat">
-          <div class="stat-value">Phase 1</div>
-          <div class="stat-label">&#xD604;&#xC7AC; &#xB2E8;&#xACC4;</div>
+          <div class="stat-value">Step 3</div>
+          <div class="stat-label">초안 작성 및 검증</div>
         </div>
       </div>
     </div>
 
     <div class="section-header">
-      <span class="section-title">Agent &#xBAA8;&#xB4C8;</span>
-      <span class="section-badge">3&#xAC1C; Agent</span>
+      <span class="section-title">Agent Workflow</span>
+      <span class="section-badge">4 Steps</span>
+      <button onclick="resetWorkspace()" style="margin-left:auto;padding:5px 14px;background:#e53e3e;color:white;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer" title="data/outputs 초기화">전체 초기화</button>
     </div>
     <div class="agents-grid">
-      <div class="agent-card priority-3" onclick="openPdfModal()">
+
+      <!-- Step 1: PDF Parsing -->
+      <div class="agent-card" style="border-top:3px solid #276749" onclick="openPdfModal()">
         <div class="card-top">
           <div class="card-icon">&#x1F4C4;</div>
-          <span class="card-tag tag-infra">&#xC9C8;&#xBB38; &#xC804;&#xCC98;&#xB9AC;</span>
+          <span class="card-tag tag-infra">Step 1</span>
         </div>
-        <div class="card-title">PDF &#xD30C;&#xC2F1; Agent</div>
-        <div class="card-status status-available">Phase 1 &mdash; &#xC0AC;&#xC6A9; &#xAC00;&#xB2A5;</div>
-        <div class="card-desc">CDP &#xAC00;&#xC774;&#xB4DC; PDF&#xC5D0;&#xC11C; &#xBE44;&#xC815;&#xD615; &#xD45C;&middot;&#xBB38;&#xD56D; &#xB370;&#xC774;&#xD130;&#xB97C; &#xCD94;&#xCD9C;&#xD558;&#xACE0; &#xCC44;&#xC810;&#xC6A9; Excel&#xB85C; &#xAD6C;&#xC870;&#xD654;&#xD569;&#xB2C8;&#xB2E4;.</div>
+        <div class="card-title">PDF Parsing Agent</div>
+        <div class="card-status" id="step1Status" style="color:#718096">확인 중...</div>
+        <div class="card-desc">CDP &#xAC00;&#xC774;&#xB4DC; PDF&#xC5D0;&#xC11C; &#xBB38;&#xD56D;/&#xC751;&#xB2F5;&#xC870;&#xAC74;&#xACFC; &#xCC44;&#xC810; &#xBC29;&#xBC95;&#xB860;&#xC744; &#xAC01;&#xAC01; &#xCD94;&#xCD9C;&#xD569;&#xB2C8;&#xB2E4;.</div>
         <ul class="card-features">
-          <li>2-Pass &#xCD94;&#xCD9C; + Claude AI &#xBCF4;&#xC815;</li>
-          <li>&#xBE44;&#xC815;&#xD615; &#xD45C;&middot;&#xBB38;&#xD56D; ID &#xC790;&#xB3D9; &#xC778;&#xC2DD;</li>
-          <li>7&#xC77C; &rarr; &#xC218; &#xC2DC;&#xAC04;&#xC73C;&#xB85C; &#xB2E8;&#xCD95; &#xBAA9;&#xD45C;</li>
+          <li>Questionnaire Module &#x2192; &#xBB38;&#xD56D;/&#xC751;&#xB2F5;&#xC870;&#xAC74; &#xD30C;&#xC2F1;</li>
+          <li>Scoring Methodology &#x2192; D/A/M/L &#xCC44;&#xC810; &#xD30C;&#xC2F1;</li>
+          <li>&#xD30C;&#xC77C;&#xBA85; &#xAE30;&#xBC18; &#xC790;&#xB3D9; &#xBD84;&#xB958;</li>
         </ul>
       </div>
-      <div class="agent-card priority-2" onclick="openWorkbench()">
+
+      <!-- Step 2: Master Integration -->
+      <div class="agent-card" style="border-top:3px solid #2b6cb0" onclick="checkAndOpenStep(2)">
+        <div class="card-top">
+          <div class="card-icon">&#x1F4D1;</div>
+          <span class="card-tag tag-blue">Step 2</span>
+        </div>
+        <div class="card-title">Master &#xD1B5;&#xD569; Agent</div>
+        <div class="card-status" id="step2Status" style="color:#718096">확인 중...</div>
+        <div class="card-desc">Step 1&#xC758; &#xD30C;&#xC2F1; &#xACB0;&#xACFC;&#xBB3C;(Questionnaire + Scoring)&#xC744; &#xBCD1;&#xD569;&#xD558;&#xC5EC; &#xD1B5;&#xD569; Master &#xBD84;&#xC11D; &#xD30C;&#xC77C;&#xC744; &#xC0DD;&#xC131;&#xD569;&#xB2C8;&#xB2E4;.</div>
+        <ul class="card-features">
+          <li>Source A + Source B &#x2192; 32&#xCEEC;&#xB7FC; Master Excel</li>
+          <li>Q_No &#xAE30;&#xC900; Lv.1/Lv.2 &#xC815;&#xB82C; &#xBC0F; &#xB9E4;&#xD551;</li>
+          <li>&#xD55C;&#xAE00; &#xBC88;&#xC5ED; &#xC635;&#xC158; (API &#xBE44;&#xC6A9; &#xBC1C;&#xC0DD;)</li>
+        </ul>
+      </div>
+
+      <!-- Step 3: Answer Drafting -->
+      <div class="agent-card" style="border-top:3px solid #d69e2e" onclick="checkAndOpenStep(3)">
         <div class="card-top">
           <div class="card-icon">&#x1F4CB;</div>
-          <span class="card-tag tag-blue">&#xB2F5;&#xBCC0; &#xBCF4;&#xC644;</span>
+          <span class="card-tag" style="background:#fffff0;color:#975a16;border:1px solid #ecc94b">Step 3</span>
         </div>
-        <div class="card-title">CDP &#xB2F5;&#xBCC0; &#xC6CC;&#xD06C;&#xBCA4;&#xCE58;</div>
-        <div class="card-status status-available">Phase 2 &mdash; &#xC0AC;&#xC6A9; &#xAC00;&#xB2A5;</div>
-        <div class="card-desc">cdp_master.xlsx &#xAE30;&#xBC18; &#xBB38;&#xD56D; &#xBCF5;&#xB77C;&#xC6B0;&#xC800;, AI &#xCD08;&#xC548; &#xC0DD;&#xC131;, &#xC804;&#xB144;&#xB3C4; &#xB2F5;&#xBCC0; &#xCC38;&#xC870;, BX&#xC5F4; &#xC9C1;&#xC811; &#xC800;&#xC7A5;.</div>
+        <div class="card-title">&#xCD08;&#xC548; &#xC791;&#xC131; Agent</div>
+        <div class="card-status" id="step3Status" style="color:#718096">확인 중...</div>
+        <div class="card-desc">2024&#xB144; CDP &#xB2F5;&#xBCC0; &#xB370;&#xC774;&#xD130;&#xB97C; &#xAE30;&#xBC18;&#xC73C;&#xB85C; 2025&#xB144; Master &#xD30C;&#xC77C;&#xC758; Answer&#xC5F4;&#xC5D0; &#xCD08;&#xC548;&#xC744; &#xC790;&#xB3D9; &#xC791;&#xC131;&#xD569;&#xB2C8;&#xB2E4;.</div>
         <ul class="card-features">
-          <li>&#xD560;&#xB8E8;&#xC2DC;&#xB124;&#xC774;&#xC158; &#xBC29;&#xC9C0; &mdash; BV &#xC120;&#xD0DD;&#xC9C0;&#xB9CC; &#xCC38;&#xC870;</li>
-          <li>&#xC804;&#xB144;&#xB3C4; BZ &#xB2F5;&#xBCC0; &rarr; AI &#xAC1C;&#xC120; &#xCD08;&#xC548;</li>
-          <li>&#xCC44;&#xC810; &#xAE30;&#xC900; D/A/M/L &#xC2E4;&#xC2DC;&#xAC04; &#xD45C;&#xC2DC;</li>
+          <li>Q_No Exact Match &#x2192; &#xC804;&#xB144;&#xB3C4; &#xB2F5;&#xBCC0; &#xBCF5;&#xC0AC;</li>
+          <li>Fuzzy Match &#x2192; &#xC720;&#xC0AC; &#xC9C8;&#xBB38; &#xCC38;&#xC870; &#xCD08;&#xC548;</li>
+          <li>140&#xAC1C; &#xBB38;&#xD56D; &#xC790;&#xB3D9; &#xCC98;&#xB9AC; + &#xC9C4;&#xD589;&#xB960; &#xD45C;&#xC2DC;</li>
         </ul>
       </div>
-      <div class="agent-card priority-1" onclick="openScoringModal()">
+
+      <!-- Step 4: AI Scoring -->
+      <div class="agent-card" style="border-top:3px solid #a0aec0;opacity:0.7;cursor:default">
         <div class="card-top">
           <div class="card-icon">&#x26A1;</div>
-          <span class="card-tag tag-priority">&#xCC44;&#xC810; &#xC790;&#xB3D9;&#xD654;</span>
+          <span class="card-tag" style="background:#edf2f7;color:#718096;border:1px solid #e2e8f0">Step 4</span>
         </div>
-        <div class="card-title">&#xC790;&#xB3D9; &#xCC44;&#xC810; Agent</div>
-        <div class="card-status status-available">Phase 3 &mdash; &#xC0AC;&#xC6A9; &#xAC00;&#xB2A5;</div>
-        <div class="card-desc">&#xC791;&#xC131;&#xB41C; CDP &#xB2F5;&#xBCC0;&#xC744; &#xCC44;&#xC810; &#xAE30;&#xC900;&#xC5D0; &#xB530;&#xB77C; &#xC790;&#xB3D9; &#xD3C9;&#xAC00;&#xD558;&#xACE0; &#xAC10;&#xC810; &#xC6D0;&#xC778;&#xC744; &#xC0C1;&#xC138;&#xD788; &#xB9AC;&#xD3EC;&#xD2B8;&#xD569;&#xB2C8;&#xB2E4;.</div>
-        <ul class="card-features">
-          <li>&#xCC44;&#xC810; &#xAE30;&#xC900; &#xB9E4;&#xB144; SKILL.md &#xB2E8;&#xB3C5; &#xC5C5;&#xB370;&#xC774;&#xD2B8;</li>
-          <li>&#xAC10;&#xC810; &#xD56D;&#xBAA9;&middot;&#xAC1C;&#xC120; &#xBC29;&#xD5A5; &#xC790;&#xB3D9; &#xC0DD;&#xC131;</li>
-          <li>&#xC81C;&#xCD9C; &#xC804; &#xBC18;&#xBCF5; &#xC218;&#xC815;&middot;&#xAC80;&#xC99D; &#xB8E8;&#xD504; &#xB300;&#xCCB4;</li>
+        <div class="card-title">AI Scoring Agent</div>
+        <div class="card-status" style="color:#a0aec0;font-weight:600">&#xBBF8;&#xAC1C;&#xBC1C; &#xC911;</div>
+        <div class="card-desc">&#xC791;&#xC131;&#xB41C; CDP &#xB2F5;&#xBCC0;&#xC744; &#xCC44;&#xC810; &#xAE30;&#xC900;&#xC5D0; &#xB530;&#xB77C; &#xC790;&#xB3D9; &#xD3C9;&#xAC00;&#xD558;&#xACE0; &#xAC10;&#xC810; &#xC6D0;&#xC778;&#xC744; &#xB9AC;&#xD3EC;&#xD2B8;&#xD569;&#xB2C8;&#xB2E4;.</div>
+        <ul class="card-features" style="color:#a0aec0">
+          <li>&#xCC44;&#xC810; &#xAE30;&#xC900; &#xB9E4;&#xB144; SKILL.md &#xC5C5;&#xB370;&#xC774;&#xD2B8;</li>
+          <li>&#xAC10;&#xC810; &#xD56D;&#xBAA9; &middot; &#xAC1C;&#xC120; &#xBC29;&#xD5A5; &#xC790;&#xB3D9; &#xC0DD;&#xC131;</li>
+          <li>&#xC81C;&#xCD9C; &#xC804; &#xBC18;&#xBCF5; &#xC218;&#xC815; &middot; &#xAC80;&#xC99D; &#xB8E8;&#xD504;</li>
         </ul>
       </div>
 
-    <!-- 지식 창고 카드 (4번째 Agent 카드) -->
-    <div class="agent-card" style="border-top:3px solid #805ad5" onclick="openVaultModal()">
-      <div class="card-top">
-        <div class="card-icon">&#x1F4DA;</div>
-        <span class="card-tag" style="background:#faf5ff;color:#553c9a;border:1px solid #d6bcfa">&#xC9C0;&#xC2DD; &#xCC3D;&#xACE0;</span>
-      </div>
-      <div class="card-title">CDP &#xC9C0;&#xC2DD; &#xCC3D;&#xACE0;</div>
-      <div class="card-status status-available" id="vaultCardStatus">&#xD655;&#xC778; &#xC911;...</div>
-      <div class="card-desc">&#xB9E4;&#xB144; CDP &#xAC00;&#xC774;&#xB4DC;&#xB77C;&#xC778; &middot; &#xC5C5;&#xBB34; &#xBB38;&#xC11C;&#xB97C; &#xC601;&#xAD6C; &#xC800;&#xC7A5;&#xD558;&#xACE0; AI &#xB2F5;&#xBCC0; &middot; &#xC790;&#xB3D9; &#xCC44;&#xC810; &middot; &#xC6CC;&#xD06C;&#xBCA4;&#xCE58;&#xC758; &#xC9C0;&#xC2DD; &#xAE30;&#xBC18;&#xC73C;&#xB85C; &#xD65C;&#xC6A9;&#xD569;&#xB2C8;&#xB2E4;.</div>
-      <ul class="card-features">
-        <li>&#xB9E4;&#xB144; CDP &#xAC00;&#xC774;&#xB4DC;&#xB77C;&#xC778; PDF &#xCD95;&#xC801;</li>
-        <li>AI &#xCC44;&#xC810; &middot; &#xB2F5;&#xBCC0; &#xC2DC; &#xC9C0;&#xC2DD; &#xC6B0;&#xC120; &#xCC38;&#xC870;</li>
-        <li>&#xD30C;&#xC77C;&#xBA85; &middot; &#xC694;&#xC57D; &#xC9C1;&#xC811; &#xD3B8;&#xC9D1; &#xAC00;&#xB2A5;</li>
-      </ul>
-    </div>
     </div><!-- /agents-grid -->
 
-    <div class="section-header">
-      <span class="section-title">&#xBE60;&#xB978; &#xC2E4;&#xD589;</span>
+    <!-- 지식 창고 (별도 섹션) -->
+    <div style="margin-top:8px">
+    <div class="agents-grid" style="grid-template-columns:1fr">
+      <div class="agent-card" style="border-top:3px solid #805ad5;max-width:100%" onclick="openVaultModal()">
+        <div class="card-top">
+          <div class="card-icon">&#x1F4DA;</div>
+          <span class="card-tag" style="background:#faf5ff;color:#553c9a;border:1px solid #d6bcfa">&#xC9C0;&#xC2DD; &#xCC3D;&#xACE0;</span>
+        </div>
+        <div class="card-title">CDP &#xC9C0;&#xC2DD; &#xCC3D;&#xACE0;</div>
+        <div class="card-status status-available" id="vaultCardStatus">&#xD655;&#xC778; &#xC911;...</div>
+        <div class="card-desc">CDP &#xAC00;&#xC774;&#xB4DC;&#xB77C;&#xC778; PDF, &#xC9C0;&#xC18D;&#xAC00;&#xB2A5;&#xACBD;&#xC601;&#xBCF4;&#xACE0;&#xC11C;, URL &#xB4F1; &#xC5C5;&#xBB34; &#xBB38;&#xC11C;&#xB97C; &#xC601;&#xAD6C; &#xC800;&#xC7A5;&#xD558;&#xACE0; &#xBAA8;&#xB4E0; Agent&#xC758; &#xC9C0;&#xC2DD; &#xAE30;&#xBC18;&#xC73C;&#xB85C; &#xD65C;&#xC6A9;&#xD569;&#xB2C8;&#xB2E4;. OCR &#xC7AC;&#xCC98;&#xB9AC;&#xB85C; &#xC774;&#xBBF8;&#xC9C0; &#xC18D; &#xD14D;&#xC2A4;&#xD2B8;&#xB3C4; &#xCD94;&#xCD9C; &#xAC00;&#xB2A5;.</div>
+      </div>
     </div>
-    <div class="actions-grid">
-      <button class="action-btn primary" onclick="openPdfModal()">
-        <span class="action-icon">&#x1F4E4;</span>
-        <span class="action-text">CDP &#xAC00;&#xC774;&#xB4DC; PDF &#xC5C5;&#xB85C;&#xB4DC;</span>
-      </button>
-      <button class="action-btn" onclick="runCrawl()">
-        <span class="action-icon">&#x1F310;</span>
-        <span class="action-text">ESG &#xC815;&#xBCF4; &#xD06C;&#xB864;&#xB9C1;</span>
-      </button>
-      <button class="action-btn" onclick="openWorkbench()">
-        <span class="action-icon">&#x1F4CB;</span>
-        <span class="action-text">CDP &#xC6CC;&#xD06C;&#xBCA4;&#xCE58;</span>
-      </button>
+    </div>
+
+    <div class="section-header">
+      <span class="section-title">Quick Actions</span>
+    </div>
+    <div class="actions-grid" style="grid-template-columns:repeat(3,1fr)">
       <button class="action-btn" onclick="viewOutputs()">
         <span class="action-icon">&#x1F4CA;</span>
-        <span class="action-text">&#xACB0;&#xACFC; &#xD30C;&#xC77C; &#xBCF4;&#xAE30;</span>
+        <span class="action-text">결과 파일 보기</span>
+      </button>
+      <button class="action-btn" onclick="openVaultModal()">
+        <span class="action-icon">&#x1F4DA;</span>
+        <span class="action-text">지식 창고</span>
       </button>
       <button class="action-btn" onclick="checkHealth(true)">
         <span class="action-icon">&#x1F50D;</span>
-        <span class="action-text">&#xC2DC;&#xC2A4;&#xD15C; &#xC0C1;&#xD0DC; &#xD655;&#xC778;</span>
+        <span class="action-text">시스템 상태</span>
       </button>
     </div>
 
@@ -748,43 +763,101 @@
 
   <!-- PDF Modal -->
   <div class="overlay" id="pdfOverlay" onclick="closePdfModal(event)">
-    <div class="modal" onclick="event.stopPropagation()">
-      <h3>&#x1F4C4; CDP &#xAC00;&#xC774;&#xB4DC; PDF &#xC5C5;&#xB85C;&#xB4DC;</h3>
-      <p>CDP &#xAC00;&#xC774;&#xB4DC; PDF&#xB97C; &#xC5C5;&#xB85C;&#xB4DC;&#xD558;&#xBA74; &#xBB38;&#xD56D; ID, &#xB0B4;&#xC6A9;, &#xC810;&#xC218;&#xB97C; &#xC790;&#xB3D9;&#xC73C;&#xB85C; &#xCD94;&#xCD9C;&#xD574; Excel &#xD30C;&#xC77C;&#xB85C; &#xC800;&#xC7A5;&#xD569;&#xB2C8;&#xB2E4;.</p>
-      <div class="drop-zone" id="dropZone" onclick="document.getElementById('pdfInput').click()"
-           ondragover="event.preventDefault();this.classList.add('drag-over')"
-           ondragleave="this.classList.remove('drag-over')"
-           ondrop="handleDrop(event)">
-        <div class="drop-icon">&#x1F4C1;</div>
-        <div class="drop-text" id="dropText">PDF &#xD30C;&#xC77C;&#xC744; &#xB04C;&#xC5B4;&#xB2E4; &#xB193;&#xAC70;&#xB098; &#xD074;&#xB9AD; (&#xC5EC;&#xB7EC; &#xD30C;&#xC77C; &#xC120;&#xD0DD; &#xAC00;&#xB2A5;)</div>
-        <div class="drop-sub" id="dropSub">&#xCD5C;&#xB300; 10&#xAC1C; &#xD30C;&#xC77C; &#xB3D9;&#xC2DC; &#xD30C;&#xC2F1; &#xC9C0;&#xC6D0;</div>
-        <input type="file" id="pdfInput" accept=".pdf" multiple style="display:none" onchange="handleFileSelect(event)">
+    <div class="modal" style="max-width:820px;width:95%" onclick="event.stopPropagation()">
+      <h3>CDP PDF Parsing Agent</h3>
+      <p style="color:#718096;font-size:13px;margin-bottom:16px">
+        PDF <b>파일명</b>에 따라 자동으로 파서가 결정됩니다. 해당 구역에 파일을 업로드해 주세요.
+      </p>
+
+      <!-- ═══ 2-Zone Upload Area ═══ -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+        <!-- LEFT: Questionnaire Module -->
+        <div style="border:2px solid #276749;border-radius:14px;padding:16px;background:#f0fff4">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-size:20px">A</span>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:#276749">문항 및 응답 조건</div>
+              <div style="font-size:11px;color:#718096">Questionnaire Module</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#4a5568;line-height:1.5;margin-bottom:10px;padding:8px;background:rgba(255,255,255,0.7);border-radius:8px">
+            각 문항에서 선택 가능한 <b>응답의 종류</b>와 응답에 담아야 할 <b>내용 가이드</b>를 추출합니다.<br>
+            <span style="color:#718096">대상: Questionnaire_Module_1-6, 7, 8-13</span>
+          </div>
+          <div class="drop-zone" id="dropZoneA" onclick="document.getElementById('pdfInputA').click()"
+               ondragover="event.preventDefault();this.classList.add('drag-over')"
+               ondragleave="this.classList.remove('drag-over')"
+               ondrop="handleDropZone(event,'A')"
+               style="min-height:80px;padding:16px;border:2px dashed #9ae6b4;border-radius:10px;text-align:center;cursor:pointer;transition:all 0.15s;background:#fff">
+            <div style="font-size:24px">&#x1F4C1;</div>
+            <div class="drop-text" id="dropTextA" style="font-size:13px;font-weight:500;color:#276749">PDF 파일 드래그 또는 클릭</div>
+            <div class="drop-sub" id="dropSubA" style="font-size:11px;color:#718096">여러 파일 선택 가능</div>
+            <input type="file" id="pdfInputA" accept=".pdf" multiple style="display:none" onchange="handleFileSelectZone(event,'A')">
+          </div>
+          <button id="uploadBtnA" disabled onclick="uploadPdfZone('A')"
+                  style="margin-top:10px;width:100%;padding:9px;background:#276749;color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+            추출 시작 (문항 파싱)
+          </button>
+        </div>
+
+        <!-- RIGHT: Scoring Methodology -->
+        <div style="border:2px solid #b83280;border-radius:14px;padding:16px;background:#fff5f7">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-size:20px">B</span>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:#b83280">채점 방법론 (D/A/M/L)</div>
+              <div style="font-size:11px;color:#718096">Scoring Methodology</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#4a5568;line-height:1.5;margin-bottom:10px;padding:8px;background:rgba(255,255,255,0.7);border-radius:8px">
+            응답에 대한 <b>4단계 채점 방법</b>(Disclosure/Awareness/Management/Leadership)과 각 단계별 <b>분모/분자 가이드</b>를 추출합니다.<br>
+            <span style="color:#718096">대상: Scoring_Methodology PDF</span>
+          </div>
+          <div class="drop-zone" id="dropZoneB" onclick="document.getElementById('pdfInputB').click()"
+               ondragover="event.preventDefault();this.classList.add('drag-over')"
+               ondragleave="this.classList.remove('drag-over')"
+               ondrop="handleDropZone(event,'B')"
+               style="min-height:80px;padding:16px;border:2px dashed #feb2b2;border-radius:10px;text-align:center;cursor:pointer;transition:all 0.15s;background:#fff">
+            <div style="font-size:24px">&#x1F4CA;</div>
+            <div class="drop-text" id="dropTextB" style="font-size:13px;font-weight:500;color:#b83280">PDF 파일 드래그 또는 클릭</div>
+            <div class="drop-sub" id="dropSubB" style="font-size:11px;color:#718096">Scoring_Methodology PDF</div>
+            <input type="file" id="pdfInputB" accept=".pdf" style="display:none" onchange="handleFileSelectZone(event,'B')">
+          </div>
+          <button id="uploadBtnB" disabled onclick="uploadPdfZone('B')"
+                  style="margin-top:10px;width:100%;padding:9px;background:#b83280;color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+            추출 시작 (채점 파싱)
+          </button>
+        </div>
+
       </div>
+
+      <!-- Page Range (shared) -->
       <div style="margin-top:14px;padding:14px;background:#f7fafc;border:1px solid #e2e8f0;border-radius:10px">
-        <div style="font-size:13px;font-weight:600;margin-bottom:8px">&#x1F4CB; &#xD398;&#xC774;&#xC9C0; &#xBC94;&#xC704; (&#xC120;&#xD0DD; &mdash; &#xB300;&#xC6A9;&#xB7C9; &#xBD84;&#xD560; &#xCC98;&#xB9AC;)</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px">페이지 범위 (선택 - 대용량 분할 처리)</div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <div style="flex:1">
-            <div style="font-size:11px;color:#718096;margin-bottom:4px">&#xC2DC;&#xC791; &#xD398;&#xC774;&#xC9C0;</div>
+            <div style="font-size:11px;color:#718096;margin-bottom:4px">시작 페이지</div>
             <input id="pageStart" type="number" min="1" placeholder="1" style="width:100%;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px">
           </div>
           <div style="margin-top:16px;color:#718096">~</div>
           <div style="flex:1">
-            <div style="font-size:11px;color:#718096;margin-bottom:4px">&#xB05D; &#xD398;&#xC774;&#xC9C0;</div>
-            <input id="pageEnd" type="number" min="1" placeholder="&#xB05D;&#xAE4C;&#xC9C0;" style="width:100%;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px">
+            <div style="font-size:11px;color:#718096;margin-bottom:4px">끝 페이지</div>
+            <input id="pageEnd" type="number" min="1" placeholder="끝까지" style="width:100%;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px">
           </div>
-          <div style="margin-top:16px;font-size:11px;color:#e53e3e;line-height:1.4">&#xBE44;&#xC6CC;&#xB450;&#xBA74; &#xC804;&#xCCB4; &#xD30C;&#xC2F1;<br><b>3,000p &#xC774;&#xC0C1;</b>&#xC740; &#xBD84;&#xD560; &#xAD8C;&#xC7A5;</div>
+          <div style="margin-top:16px;font-size:11px;color:#e53e3e;line-height:1.4">비워두면 전체<br><b>3,000p+</b> 분할 권장</div>
         </div>
         <div style="display:flex;gap:6px">
           <button onclick="document.getElementById('pageStart').value=1;document.getElementById('pageEnd').value=200" style="padding:4px 10px;font-size:11px;background:#e2e8f0;border:none;border-radius:5px;cursor:pointer">1~200p</button>
           <button onclick="document.getElementById('pageStart').value=201;document.getElementById('pageEnd').value=500" style="padding:4px 10px;font-size:11px;background:#e2e8f0;border:none;border-radius:5px;cursor:pointer">201~500p</button>
           <button onclick="document.getElementById('pageStart').value=501;document.getElementById('pageEnd').value=800" style="padding:4px 10px;font-size:11px;background:#e2e8f0;border:none;border-radius:5px;cursor:pointer">501~800p</button>
-          <button onclick="document.getElementById('pageStart').value='';document.getElementById('pageEnd').value=''" style="padding:4px 10px;font-size:11px;background:#e2e8f0;border:none;border-radius:5px;cursor:pointer">&#xC804;&#xCCB4;</button>
+          <button onclick="document.getElementById('pageStart').value='';document.getElementById('pageEnd').value=''" style="padding:4px 10px;font-size:11px;background:#e2e8f0;border:none;border-radius:5px;cursor:pointer">전체</button>
         </div>
       </div>
+
       <div id="resultBox" style="display:none;margin-top:14px;padding:14px;background:#f0fff4;border:1px solid #9ae6b4;border-radius:10px;font-size:13px;color:#276749"></div>
-      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
-        <button onclick="closePdfModal()" style="padding:10px 20px;background:#e2e8f0;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:500">&#xCDE8;&#xC18C;</button>
-        <button id="uploadBtn" disabled onclick="uploadPdf()" style="padding:10px 24px;background:#276749;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">&#xCD94;&#xCD9C; &#xC2DC;&#xC791;</button>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
+        <button onclick="closePdfModal()" style="padding:10px 20px;background:#e2e8f0;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:500">닫기</button>
       </div>
     </div>
   </div>
@@ -839,6 +912,122 @@
     </div>
   </div>
 
+  <!-- Master Analysis Builder 모달 -->
+  <div class="overlay" id="masterOverlay" onclick="if(event.target===this)closeMasterModal()">
+    <div class="modal" style="width:960px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column" onclick="event.stopPropagation()">
+      <div style="padding:18px 24px 14px;border-bottom:1px solid #e2e8f0;flex-shrink:0">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:17px;font-weight:700;color:#1a202c">&#x1F4D1; CDP Master Analysis Builder</div>
+            <div style="font-size:12px;color:#718096;margin-top:2px">Source A (Questionnaire) + Source B (Scoring) &#x2192; &#xD1B5;&#xD569; &#xB9C8;&#xC2A4;&#xD130; &#xD30C;&#xC77C;</div>
+          </div>
+          <button onclick="closeMasterModal()" style="padding:6px 16px;background:#e2e8f0;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer">&#xB2EB;&#xAE30;</button>
+        </div>
+      </div>
+
+      <!-- 컨트롤 바 -->
+      <div style="padding:12px 24px;background:#f7fafc;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex-shrink:0">
+        <button id="masterBuildBtn" onclick="buildMasterSheet()" style="padding:8px 20px;background:#276749;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+          &#x2699;&#xFE0F; Master &#xC0DD;&#xC131;
+        </button>
+        <label style="font-size:12px;color:#718096;display:flex;align-items:center;gap:4px">
+          <input type="checkbox" id="masterTranslate"> &#xD55C;&#xAE00; &#xBC88;&#xC5ED; &#xD3EC;&#xD568; (API &#xBE44;&#xC6A9; &#xBC1C;&#xC0DD;)
+        </label>
+        <span id="masterStatus" style="font-size:12px;color:#718096"></span>
+        <div style="flex:1"></div>
+        <a id="masterDownloadLink" href="/api/v1/download-master" download="CDP_2025_Master_Analysis.xlsx"
+          style="display:none;padding:7px 16px;background:#2b6cb0;color:#fff;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none">
+          &#x2B07; &#xB2E4;&#xC6B4;&#xB85C;&#xB4DC; Excel
+        </a>
+      </div>
+
+      <!-- 결과 요약 + 미리보기 -->
+      <div style="flex:1;overflow:auto;padding:16px 24px">
+        <div id="masterSummary" style="display:none;margin-bottom:16px">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+            <div style="padding:12px 14px;background:#f0fff4;border:1px solid #c6f6d5;border-radius:8px;text-align:center">
+              <div style="font-size:20px;font-weight:800;color:#276749" id="masterStatTotal">-</div>
+              <div style="font-size:11px;color:#718096">&#xCD1D; &#xD589;</div>
+            </div>
+            <div style="padding:12px 14px;background:#ebf8ff;border:1px solid #bee3f8;border-radius:8px;text-align:center">
+              <div style="font-size:20px;font-weight:800;color:#2b6cb0" id="masterStatMain">-</div>
+              <div style="font-size:11px;color:#718096">&#xBA54;&#xC778; &#xBB38;&#xD56D; (Lv.1)</div>
+            </div>
+            <div style="padding:12px 14px;background:#faf5ff;border:1px solid #e9d8fd;border-radius:8px;text-align:center">
+              <div style="font-size:20px;font-weight:800;color:#553c9a" id="masterStatSub">-</div>
+              <div style="font-size:11px;color:#718096">&#xC11C;&#xBE0C; &#xD589; (Lv.2)</div>
+            </div>
+            <div style="padding:12px 14px;background:#fffbeb;border:1px solid #f6e05e;border-radius:8px;text-align:center">
+              <div style="font-size:20px;font-weight:800;color:#744210" id="masterStatCols">32</div>
+              <div style="font-size:11px;color:#718096">&#xCEEC;&#xB7FC; (A~AF)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 필터 바 -->
+        <div id="masterFilterBar" style="display:none;margin-bottom:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input id="masterFilterQ" placeholder="Q_No &#xAC80;&#xC0C9;..." oninput="masterFilterPreview()"
+            style="padding:5px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;width:140px">
+          <select id="masterFilterLv" onchange="masterFilterPreview()"
+            style="padding:5px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px">
+            <option value="">&#xC804;&#xCCB4; Lv</option>
+            <option value="Lv.1">Lv.1 &#xBA54;&#xC778;&#xB9CC;</option>
+            <option value="Lv.2">Lv.2 &#xC11C;&#xBE0C;&#xB9CC;</option>
+          </select>
+          <span id="masterFilterCount" style="font-size:11px;color:#718096"></span>
+        </div>
+
+        <!-- 미리보기 테이블 -->
+        <div id="masterPreview" style="font-size:12px">
+          <div style="color:#718096;text-align:center;padding:40px 0">
+            &#x2699;&#xFE0F; Master &#xC0DD;&#xC131; &#xBC84;&#xD2BC;&#xC744; &#xB20C;&#xB7EC; &#xD1B5;&#xD569; &#xD30C;&#xC77C;&#xC744; &#xBE4C;&#xB4DC;&#xD558;&#xC138;&#xC694;.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drafting Agent Modal -->
+  <div class="overlay" id="draftOverlay" onclick="if(event.target===this)closeDraftPanel()">
+    <div class="modal" style="width:700px" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid #e2e8f0">
+        <div>
+          <h3 style="margin:0">Step 3: 전년도 지식 기반 초안 생성</h3>
+          <p style="font-size:12px;color:#718096;margin:4px 0 0">2024 CDP 답변 데이터를 기반으로 2025 Master Analysis Answer열에 초안을 자동 작성합니다.</p>
+        </div>
+        <button onclick="closeDraftPanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#718096">&times;</button>
+      </div>
+
+      <div style="margin-top:16px;padding:14px;background:#fffff0;border:1px solid #ecc94b;border-radius:10px">
+        <div style="font-size:13px;margin-bottom:10px">
+          <b>Source:</b> data/knowledge/2024_CDP_QA.xlsx.xlsx<br>
+          <b>Target:</b> data/outputs/CDP_2025_Master_Analysis.xlsx → Answer열
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button id="draftStartBtn" onclick="startDrafting()" style="padding:10px 24px;background:#d69e2e;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">
+            전년도 기반 초안 생성
+          </button>
+          <span id="draftStatus" style="font-size:13px;color:#718096"></span>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div id="draftProgressBox" style="display:none;margin-top:14px;padding:14px;background:#f7fafc;border:1px solid #e2e8f0;border-radius:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:13px;font-weight:600">진행 상태</span>
+          <span id="draftPct" style="font-size:13px;font-weight:700;color:#d69e2e">0%</span>
+        </div>
+        <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
+          <div id="draftBar" style="height:100%;background:#d69e2e;width:0%;transition:width 0.3s"></div>
+        </div>
+        <div id="draftDetail" style="font-size:12px;color:#718096;margin-top:8px">준비 중...</div>
+      </div>
+
+      <!-- Result -->
+      <div id="draftResult" style="display:none;margin-top:14px;padding:14px;background:#f0fff4;border:1px solid #9ae6b4;border-radius:10px;font-size:13px"></div>
+    </div>
+  </div>
+
   <!-- ESG 크롤링 결과 모달 -->
   <div class="overlay" id="crawlResultsOverlay" onclick="if(event.target===this)closeCrawlModal()">
     <div class="modal" style="width:700px;max-height:85vh;overflow-y:auto" onclick="event.stopPropagation()">
@@ -883,10 +1072,27 @@
         </div>
       </div>
       <p>CDP &#xAC00;&#xC774;&#xB4DC;&#xB77C;&#xC778; PDF &#xB4F1; &#xC5C5;&#xBB34; &#xBB38;&#xC11C;&#xB97C; &#xC800;&#xC7A5;&#xD558;&#xACE0; AI &#xB2F5;&#xBCC0; &#xC2DC; &#xC9C0;&#xC2DD; &#xAE30;&#xBC18;&#xC73C;&#xB85C; &#xD65C;&#xC6A9;&#xD569;&#xB2C8;&#xB2E4;. &#xD30C;&#xC77C;&#xBA85;&#xACFC; &#xC694;&#xC57D;&#xC744; &#xD074;&#xB9AD;&#xD558;&#xC5EC; &#xD3B8;&#xC9D1;&#xD560; &#xC218; &#xC788;&#xC2B5;&#xB2C8;&#xB2E4;.</p>
+      <!-- URL 입력 -->
+      <div style="margin-bottom:14px;padding:12px;background:#f7fafc;border:1px solid #e2e8f0;border-radius:10px">
+        <div style="font-size:12px;font-weight:600;color:#4a5568;margin-bottom:6px">URL 지식화 (웹페이지 / PDF 링크)</div>
+        <div style="display:flex;gap:8px">
+          <input id="vaultUrlInput" type="url" placeholder="https://example.com/report.pdf 또는 웹페이지 URL"
+            style="flex:1;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px"
+            onkeydown="if(event.key==='Enter')addUrlToVault()">
+          <button onclick="addUrlToVault()"
+            style="padding:8px 16px;background:#805ad5;color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">
+            + URL 추가
+          </button>
+        </div>
+        <div style="font-size:11px;color:#718096;margin-top:4px">
+          지속가능 보고서, IR 자료, CDP 가이드 등 URL을 붙여넣으면 원문을 지식으로 저장합니다 (토큰 비용 없음)
+        </div>
+      </div>
+
       <!-- 업로드 진행 표시 -->
       <div id="vaultUploadProgress" style="display:none;margin-bottom:14px;padding:10px 14px;background:#f0fff4;border:1px solid #c6f6d5;border-radius:8px;font-size:13px;color:var(--green);">
         <span class="spin" style="border-top-color:var(--green);border-color:rgba(39,103,73,.3)"></span>
-        <span id="vaultUploadMsg">&#xC5C5;&#xB85C;&#xB4DC; &#xBC0F; AI &#xC694;&#xC57D; &#xC0DD;&#xC131; &#xC911;...</span>
+        <span id="vaultUploadMsg">업로드 및 처리 중...</span>
       </div>
       <!-- 문서 목록 -->
       <div id="vaultDocList" style="max-height:60vh;overflow-y:auto;">
@@ -1021,8 +1227,10 @@
   <script>
     let selectedFile = null;
     let selectedFiles = [];
+    // Zone-based file storage
+    let zoneFiles = { A: [], B: [] };
 
-    window.addEventListener('load', () => { checkHealth(); loadKbDocs(); });
+    window.addEventListener('load', () => { checkHealth(); loadKbDocs(); refreshStepStatus(); });
 
     async function checkHealth(showModal = false) {
       try {
@@ -1186,92 +1394,114 @@
     }
 
     function resetModal() {
-      selectedFile = null;
-      selectedFiles = [];
-      document.getElementById('dropText').textContent = 'PDF \ud30c\uc77c\uc744 \ub04c\uc5b4\ub2e4 \ub193\uac70\ub098 \ud074\ub9ad (\uc5ec\ub7ec \ud30c\uc77c \uc120\ud0dd \uac00\ub2a5)';
-      document.getElementById('dropSub').textContent = '\ucd5c\ub300 10\uac1c \ud30c\uc77c \ub3d9\uc2dc \ud30c\uc2f1 \uc9c0\uc6d0';
-      document.getElementById('uploadBtn').disabled = true;
+      zoneFiles = { A: [], B: [] };
+      ['A', 'B'].forEach(z => {
+        document.getElementById('dropText' + z).textContent = 'PDF 파일 드래그 또는 클릭';
+        document.getElementById('dropSub' + z).textContent = z === 'A' ? '여러 파일 선택 가능' : 'Scoring_Methodology PDF';
+        document.getElementById('uploadBtn' + z).disabled = true;
+        document.getElementById('dropZone' + z).classList.remove('drag-over');
+      });
       document.getElementById('resultBox').style.display = 'none';
-      document.getElementById('dropZone').classList.remove('drag-over');
     }
 
-    function handleDrop(e) {
+    function handleDropZone(e, zone) {
       e.preventDefault();
-      document.getElementById('dropZone').classList.remove('drag-over');
-      const files = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.pdf'));
-      if (files.length) setFiles(files);
-      else showToast('PDF \ud30c\uc77c\ub9cc \uc5c5\ub85c\ub4dc \uac00\ub2a5\ud569\ub2c8\ub2e4.');
+      document.getElementById('dropZone' + zone).classList.remove('drag-over');
+      const files = Array.from(e.dataTransfer.files).filter(f => f.name.toLowerCase().endsWith('.pdf'));
+      if (files.length) setZoneFiles(files, zone);
+      else showToast('PDF 파일만 업로드 가능합니다.');
     }
 
-    function handleFileSelect(e) {
+    function handleFileSelectZone(e, zone) {
       const files = Array.from(e.target.files);
-      if (files.length) setFiles(files);
+      if (files.length) setZoneFiles(files, zone);
     }
 
-    function setFiles(files) {
-      selectedFiles = files;
-      selectedFile = files[0];
+    function setZoneFiles(files, zone) {
+      zoneFiles[zone] = files;
       const totalMB = (files.reduce((s, f) => s + f.size, 0) / 1024 / 1024).toFixed(1);
-      if (files.length === 1) {
-        document.getElementById('dropText').textContent = '\ud83d\udcce ' + files[0].name;
-        document.getElementById('dropSub').textContent = '\ud30c\uc77c \ud06c\uae30: ' + totalMB + ' MB';
-      } else {
-        document.getElementById('dropText').textContent = '\ud83d\udcce ' + files.length + '\uac1c \ud30c\uc77c \uc120\ud0dd\ub428';
-        document.getElementById('dropSub').textContent = '\uc804\uccb4 \ud06c\uae30: ' + totalMB + ' MB';
-      }
-      document.getElementById('uploadBtn').disabled = false;
+      const names = files.map(f => f.name).join(', ');
+      document.getElementById('dropText' + zone).textContent = files.length === 1
+        ? '\uD83D\uDCCE ' + files[0].name
+        : '\uD83D\uDCCE ' + files.length + '개 파일';
+      document.getElementById('dropSub' + zone).textContent = totalMB + ' MB';
+      document.getElementById('uploadBtn' + zone).disabled = false;
     }
 
-    async function uploadPdf() {
-      if (!selectedFiles.length) return;
-      const btn = document.getElementById('uploadBtn');
+    async function uploadPdfZone(zone) {
+      const files = zoneFiles[zone];
+      if (!files || !files.length) return;
+
+      const btn = document.getElementById('uploadBtn' + zone);
       const resultBox = document.getElementById('resultBox');
-      btn.innerHTML = '<span class="spin"></span>\ucd94\ucd9c \uc911...';
+      const typeLabel = zone === 'A' ? '문항 파싱 (Questionnaire)' : '채점 파싱 (Scoring D/A/M/L)';
+      // 모든 Zone이 /parse-pdf 호출 — 서버가 파일명으로 파서 결정
+      const endpoint = '/api/v1/parse-pdf';
+
+      btn.innerHTML = '<span class="spin"></span> 추출 중...';
       btn.disabled = true;
       resultBox.style.display = 'block';
-      resultBox.textContent = '\u23f3 PDF \ubd84\uc11d \uc911\uc785\ub2c8\ub2e4. \ud30c\uc77c \ud06c\uae30\uc5d0 \ub530\ub77c 1~3\ubd84 \uc18c\uc694\ub420 \uc218 \uc788\uc2b5\ub2c8\ub2e4...';
+      const startTime = Date.now();
+      const timerInterval = setInterval(() => {
+        const elapsed = Math.round((Date.now() - startTime) / 1000);
+        const min = Math.floor(elapsed / 60);
+        const sec = elapsed % 60;
+        resultBox.innerHTML = '<div style="display:flex;align-items:center;gap:10px">' +
+          '<span class="spin"></span>' +
+          '<span>' + typeLabel + ' 진행 중...</span>' +
+          '<span style="margin-left:auto;font-weight:600;color:#276749">' +
+          String(min).padStart(2,'0') + ':' + String(sec).padStart(2,'0') + '</span></div>';
+      }, 1000);
+      resultBox.innerHTML = '\u23F3 ' + typeLabel + ' 시작...';
 
-      if (selectedFiles.length === 1) {
-        // Single file — use existing /parse-pdf endpoint
+      if (files.length === 1) {
+        // Single file
         const pageStart = document.getElementById('pageStart').value;
         const pageEnd = document.getElementById('pageEnd').value;
-        const url = '/api/v1/parse-pdf' +
-          (pageStart || pageEnd ? '?page_start=' + (pageStart||'') + '&page_end=' + (pageEnd||'') : '');
+        let params = [];
+        if (pageStart) params.push('page_start=' + pageStart);
+        if (pageEnd) params.push('page_end=' + pageEnd);
+        const qs = params.length ? '?' + params.join('&') : '';
+
         const formData = new FormData();
-        formData.append('file', selectedFiles[0]);
+        formData.append('file', files[0]);
         try {
-          const res = await fetch(url, { method: 'POST', body: formData });
+          const res = await fetch(endpoint + qs, { method: 'POST', body: formData });
           const data = await res.json();
           if (data.status === 'success' || data.status === 'needs_review') {
             const q = data.data?.total_questions || 0;
-            var t = data.data?.tables_extracted || 0;
-            var tr = data.data?.tables_transposed || 0;
-            var fname = data.data?.excel_filename || '';
-            var dlHtml = fname
-              ? '<div style="margin-top:10px"><div style="color:#276749;font-size:13px;margin-bottom:6px">\ud83d\udcc4 \uc800\uc7a5\ub41c \ud30c\uc77c: <b>' + fname + '</b></div>' +
-                '<a href="/api/v1/download/' + encodeURIComponent(fname) + '" download="' + fname + '" ' +
-                'style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:8px 20px;background:#276749;color:white;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">' +
-                '\u2b07 Excel \ub2e4\uc6b4\ub85c\ub4dc</a></div>'
-              : '<div style="color:#718096;font-size:12px;margin-top:6px">\ud83d\udce5 data/outputs \ud3f4\ub354\uc5d0 \uc800\uc7a5\ub428</div>';
+            const t = data.data?.tables_extracted || 0;
+            const fname = data.data?.excel_filename || '';
+            const dlBtn = fname
+              ? '<a href="/api/v1/download/' + encodeURIComponent(fname) + '" download="' + fname + '" ' +
+                'style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:8px 20px;' +
+                'background:' + (zone === 'A' ? '#276749' : '#b83280') + ';color:white;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">' +
+                '\u2B07 Excel 다운로드 (' + fname + ')</a>'
+              : '';
             resultBox.innerHTML =
               '<pre style="font-family:inherit;white-space:pre-wrap;margin:0">' +
-              '\u2705 \ucd94\ucd9c \uc644\ub8cc!\n   \uc778\uc2dd\ub41c \ubb38\ud56d \uc218: ' + q + '\uac1c\n' +
-              '   \ucd94\ucd9c\ub41c \ud45c \uc218: ' + t + '\uac1c (\uc138\ub85c \uc804\uce58 \ud589: ' + tr + '\uac1c)\n' +
-              '   \ucc98\ub9ac \uc2dc\uac04: ' + data.processing_time_sec + '\ucd08\n' +
-              '   \uc2e0\ub8b0\ub3c4: ' + ((data.validation?.confidence_score || 0) * 100).toFixed(0) + '%</pre>' + dlHtml;
-            showToast('\u2705 \ucd94\ucd9c \uc644\ub8cc! \ud45c ' + t + '\uac1c \uc800\uc7a5');
-            viewOutputs();
+              '\u2705 ' + typeLabel + ' 완료!\n' +
+              '   파일: ' + files[0].name + '\n' +
+              '   문항 수: ' + q + '개 | 표 수: ' + t + '개\n' +
+              '   처리 시간: ' + data.processing_time_sec + '초\n' +
+              '   신뢰도: ' + ((data.validation?.confidence_score || 0) * 100).toFixed(0) + '%</pre>' +
+              (dlBtn ? '<div style="margin-top:10px">' + dlBtn + '</div>' : '');
+            showToast('\u2705 ' + typeLabel + ' 완료!');
+            clearInterval(timerInterval);
+            refreshStepStatus();
           } else {
-            resultBox.textContent = '\u274c \ucd94\ucd9c \uc2e4\ud328: ' + (data.error_message || '\uc54c \uc218 \uc5c6\ub294 \uc624\ub958');
-            showToast('\ucd94\ucd9c \uc2e4\ud328: ' + data.error_message);
+            clearInterval(timerInterval);
+            resultBox.textContent = '\u274C 실패: ' + (data.error_message || '알 수 없는 오류');
+            showToast('추출 실패: ' + data.error_message);
           }
         } catch (e) {
-          resultBox.textContent = '\u274c \uc11c\ubc84 \uc5f0\uacb0 \uc624\ub958: ' + e.message;
+          clearInterval(timerInterval);
+          resultBox.textContent = '\u274C 서버 연결 오류: ' + e.message;
         }
       } else {
-        // Multiple files — use /parse-pdf/multi endpoint
+        // Multiple files — use /parse-pdf/multi
         const formData = new FormData();
-        selectedFiles.forEach(f => formData.append('files', f));
+        files.forEach(f => formData.append('files', f));
         try {
           const res = await fetch('/api/v1/parse-pdf/multi', { method: 'POST', body: formData });
           const data = await res.json();
@@ -1279,25 +1509,26 @@
           const success = data.success || 0;
           const failed = data.failed || 0;
           let html = '<pre style="font-family:inherit;white-space:pre-wrap;margin:0">' +
-            '\u2705 \ub2e4\uc911 \ud30c\uc77c \ucd94\ucd9c \uc644\ub8cc!\n' +
-            '   \uc804\uccb4: ' + total + '\uac1c | \uc131\uacf5: ' + success + '\uac1c | \uc2e4\ud328: ' + failed + '\uac1c\n\n';
+            '\u2705 ' + typeLabel + ' 완료!\n   전체: ' + total + '개 | 성공: ' + success + '개 | 실패: ' + failed + '개\n\n';
           (data.results || []).forEach(r => {
-            const icon = r.status === 'success' ? '\u2705' : '\u274c';
-            html += icon + ' ' + r.file + ' (' + r.elapsed_sec + '\ucd08)\n';
+            const icon = r.status === 'success' ? '\u2705' : '\u274C';
+            html += icon + ' ' + r.file + ' (' + r.elapsed_sec + '초)\n';
             if (r.excel_filename) {
-              html += '   Excel: <a href="/api/v1/download/' + encodeURIComponent(r.excel_filename) + '" download="' + r.excel_filename + '" style="color:#276749;font-weight:600">' + r.excel_filename + '</a>\n';
+              html += '   <a href="/api/v1/download/' + encodeURIComponent(r.excel_filename) + '" download style="color:#276749;font-weight:600">' + r.excel_filename + '</a>\n';
             }
-            if (r.error) html += '   \uc624\ub958: ' + r.error + '\n';
+            if (r.error) html += '   오류: ' + r.error + '\n';
           });
-          html += '</pre>';
-          resultBox.innerHTML = html;
-          showToast('\u2705 ' + success + '/' + total + '\uac1c \ud30c\uc77c \ucd94\ucd9c \uc644\ub8cc');
-          if (success > 0) viewOutputs();
+          resultBox.innerHTML = html + '</pre>';
+          showToast('\u2705 ' + success + '/' + total + '개 완료');
+          clearInterval(timerInterval);
+          refreshStepStatus();
         } catch (e) {
-          resultBox.textContent = '\u274c \uc11c\ubc84 \uc5f0\uacb0 \uc624\ub958: ' + e.message;
+          clearInterval(timerInterval);
+          resultBox.textContent = '\u274C 서버 오류: ' + e.message;
         }
       }
-      btn.innerHTML = '\ucd94\ucd9c \uc2dc\uc791';
+      clearInterval(timerInterval);
+      btn.innerHTML = zone === 'A' ? '추출 시작 (문항 파싱)' : '추출 시작 (채점 파싱)';
       btn.disabled = false;
     }
 
@@ -1587,11 +1818,28 @@
         loadingDiv.className = 'chat-msg bot';
         if (data.answer) {
           loadingDiv.innerHTML = renderChatText(data.answer);
+          // 웹 검색 표시
+          if (data.web_searched) {
+            const webBadge = document.createElement('div');
+            webBadge.style.cssText = 'font-size:10px;color:#805ad5;margin-top:6px;font-weight:600';
+            webBadge.textContent = '\uD83C\uDF10 웹 검색 결과 포함';
+            loadingDiv.appendChild(webBadge);
+          }
+          // 출처 표시
           if (data.sources && data.sources.length > 0) {
             const srcDiv = document.createElement('div');
             srcDiv.style.cssText = 'font-size:11px;color:#718096;margin-top:8px;border-top:1px solid #e2e8f0;padding-top:6px';
-            const names = [...new Set(data.sources)].map(s => s.replace(/\.[^.]+$/, ''));
-            srcDiv.textContent = '📄 출처: ' + names.join(', ');
+            const uniqueSources = [...new Set(data.sources)];
+            const srcHtml = uniqueSources.map(s => {
+              if (s.includes('http')) {
+                // Web URL source — make clickable
+                const url = s.match(/\((https?:\/\/[^)]+)\)/)?.[1] || s;
+                const label = s.replace(/\s*\(https?:\/\/[^)]+\)/, '');
+                return '<a href="' + url + '" target="_blank" style="color:#805ad5;text-decoration:underline">' + (label || url) + '</a>';
+              }
+              return s.replace(/\.[^.]+$/, '');
+            }).join(', ');
+            srcDiv.innerHTML = '\uD83D\uDCC4 출처: ' + srcHtml;
             loadingDiv.appendChild(srcDiv);
           }
         } else {
@@ -2050,41 +2298,61 @@
       if (statusEl) statusEl.textContent = _vaultDocs.length + '개 문서 저장됨';
     }
 
+    function _docType(name) {
+      const nl = (name||'').toLowerCase();
+      if (nl.includes('questionnaire')) return { label: 'Questionnaire', color: '#276749', bg: '#f0fff4' };
+      if (nl.includes('scoring')) return { label: 'Scoring', color: '#b83280', bg: '#fff5f7' };
+      if (nl.includes('2024') || nl.includes('qa')) return { label: '전년도 답변', color: '#d69e2e', bg: '#fffff0' };
+      if (nl.includes('지속가능') || nl.includes('sustainability')) return { label: 'ESG 보고서', color: '#2b6cb0', bg: '#ebf8ff' };
+      if (nl.startsWith('url_')) return { label: 'Web URL', color: '#805ad5', bg: '#faf5ff' };
+      return { label: '기타', color: '#718096', bg: '#f7fafc' };
+    }
+
     function renderVaultModal() {
       const container = document.getElementById('vaultDocList');
       if (!container) return;
       if (!_vaultDocs.length) {
-        container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px;">\ubb38\uc11c\uac00 \uc5c6\uc2b5\ub2c8\ub2e4.<br>\uc704\uc758 \ud30c\uc77c \ucd94\uac00 \ubc84\ud2bc\uc744 \uc774\uc6a9\ud558\uc138\uc694.</div>';
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px;">문서가 없습니다. 파일 추가 또는 URL을 입력하세요.</div>';
         return;
       }
-      container.innerHTML = _vaultDocs.map((d, i) => `
-        <div class="vault-doc-row" id="vdoc_${i}">
-          <div class="vault-doc-top">
-            <span class="vault-doc-icon">${fileIcon(d.doc_name)}</span>
-            <div class="vault-doc-name-wrap">
-              <div class="vault-doc-name-display" onclick="startEditName(${i})" title="\ud074\ub9ad\ud558\uc5ec \uc774\ub984 \uc218\uc815">${escHtml(d.display_name)}</div>
-              <input class="vault-doc-name-input" id="vname_${i}" type="text" value="${escHtml(d.display_name)}"
-                onkeydown="if(event.key==='Enter')saveDocMeta(${i}); if(event.key==='Escape')cancelEditName(${i})">
-              <div class="vault-doc-meta">
-                ${d.year ? `<span class="vault-year-badge">${d.year}</span>` : ''}
-                <span class="vault-meta-chip">${d.file_size_kb} KB</span>
-                <span class="vault-meta-chip">${d.chunk_count}\uac1c \uccad\ud06c</span>
-                <span class="vault-meta-chip">${(d.created_at||'').slice(0,10)}</span>
+      container.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">' +
+        _vaultDocs.map((d, i) => {
+          const dt = _docType(d.doc_name);
+          const ext = (d.doc_name||'').split('.').pop().toUpperCase();
+          return `
+          <div id="vdoc_${i}" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;position:relative;border-left:4px solid ${dt.color}">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <span style="font-size:22px">${fileIcon(d.doc_name)}</span>
+              <div style="flex:1;min-width:0">
+                <div class="vault-doc-name-display" onclick="startEditName(${i})"
+                  style="font-size:13px;font-weight:600;color:#1a202c;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+                  title="${escHtml(d.display_name)}">${escHtml(d.display_name)}</div>
+                <input class="vault-doc-name-input" id="vname_${i}" type="text" value="${escHtml(d.display_name)}"
+                  style="display:none;width:100%;font-size:12px;padding:2px 4px;border:1px solid #e2e8f0;border-radius:4px"
+                  onkeydown="if(event.key==='Enter')saveDocMeta(${i}); if(event.key==='Escape')cancelEditName(${i})">
               </div>
             </div>
-          </div>
-          <div class="vault-doc-summary" onclick="startEditSummary(${i})" title="\ud074\ub9ad\ud558\uc5ec \uc694\uc57d \uc218\uc815">
-            ${d.summary ? escHtml(d.summary) : '<span style="color:var(--text-muted);font-style:italic">\uc694\uc57d \uc5c6\uc74c \u2014 \ud074\ub9ad\ud558\uc5ec \uc9c1\uc811 \uc785\ub825</span>'}
-          </div>
-          <textarea class="vault-doc-summary-input" id="vsummary_${i}"
-            onkeydown="if(event.key==='Escape')cancelEditSummary(${i})">${escHtml(d.summary||'')}</textarea>
-          <div class="vault-doc-actions">
-            <button class="vault-btn-sm save" id="vsave_${i}" onclick="saveDocMeta(${i})">\uc800\uc7a5</button>
-            <button class="vault-btn-sm" onclick="startEditName(${i})">&#x270F;&#xFE0F; \uc774\ub984 \uc218\uc815</button>
-            <button class="vault-btn-sm danger" onclick="deleteVaultDoc('${d.doc_name}',${i})">&#x1F5D1;&#xFE0F; \uc0ad\uc81c</button>
-          </div>
-        </div>
-      `).join('');
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+              <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${dt.bg};color:${dt.color};font-weight:600">${dt.label}</span>
+              <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:#edf2f7;color:#4a5568">${ext}</span>
+              ${d.year ? `<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:#fefcbf;color:#975a16">${d.year}</span>` : ''}
+              <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:#edf2f7;color:#718096">${d.file_size_kb}KB</span>
+              <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:#edf2f7;color:#718096">${d.chunk_count} chunks</span>
+            </div>
+            <div class="vault-doc-summary" onclick="startEditSummary(${i})"
+              style="font-size:11px;color:#4a5568;line-height:1.5;max-height:48px;overflow:hidden;cursor:pointer;margin-bottom:8px">
+              ${d.summary ? escHtml(d.summary).substring(0, 120) : '<span style="color:#a0aec0;font-style:italic">요약 없음</span>'}
+            </div>
+            <textarea class="vault-doc-summary-input" id="vsummary_${i}" style="display:none;width:100%;font-size:11px;border:1px solid #e2e8f0;border-radius:4px;padding:4px"
+              onkeydown="if(event.key==='Escape')cancelEditSummary(${i})">${escHtml(d.summary||'')}</textarea>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <button class="vault-btn-sm save" id="vsave_${i}" onclick="saveDocMeta(${i})" style="display:none;font-size:10px">저장</button>
+              ${d.doc_name.toLowerCase().endsWith('.pdf') ?
+                '<button onclick="ocrReprocess(\'' + d.doc_name.replace(/'/g,"\\'") + '\')" style="font-size:10px;padding:3px 8px;background:#805ad5;color:#fff;border:none;border-radius:5px;cursor:pointer">OCR</button>' : ''}
+              <button onclick="deleteVaultDoc('${d.doc_name}',${i})" style="font-size:10px;padding:3px 8px;background:#fed7d7;color:#c53030;border:none;border-radius:5px;cursor:pointer;margin-left:auto">삭제</button>
+            </div>
+          </div>`;
+        }).join('') + '</div>';
     }
 
     function escHtml(s) {
@@ -2093,6 +2361,90 @@
     function fileIcon(name) {
       const ext = (name||'').split('.').pop().toLowerCase();
       return {pdf:'\uD83D\uDCC4',docx:'\uD83D\uDCDD',doc:'\uD83D\uDCDD',txt:'\uD83D\uDCC3',md:'\uD83D\uDCCB'}[ext]||'\uD83D\uDCC1';
+    }
+
+    async function addUrlToVault() {
+      const input = document.getElementById('vaultUrlInput');
+      const url = input.value.trim();
+      if (!url) { showToast('URL을 입력하세요'); return; }
+      if (!url.startsWith('http')) { showToast('http:// 또는 https://로 시작하는 URL을 입력하세요'); return; }
+
+      const prog = document.getElementById('vaultUploadProgress');
+      const msg = document.getElementById('vaultUploadMsg');
+      prog.style.display = 'block';
+      msg.textContent = 'URL 크롤링 + 지식화 중... (원문 저장, 토큰 비용 없음)';
+
+      try {
+        const res = await fetch('/api/v1/knowledge/url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('\u2705 ' + data.doc_name + ' 저장 완료 (' + data.chunks_added + ' chunks)');
+          input.value = '';
+          await loadVaultDocs();
+        } else {
+          showToast('\u274c ' + (data.detail || '알 수 없는 오류'));
+        }
+      } catch (e) {
+        showToast('\u274c 서버 오류: ' + e.message);
+      } finally {
+        prog.style.display = 'none';
+      }
+    }
+
+    let _ocrPolling = null;
+
+    async function ocrReprocess(docName) {
+      if (!confirm(docName + '\n\nOCR 재처리합니다. 이미지 속 텍스트를 추출합니다.\n(Haiku API 사용, 소량 토큰 소모, 5~15분 소요)\n\n진행할까요?')) return;
+      const prog = document.getElementById('vaultUploadProgress');
+      const msg = document.getElementById('vaultUploadMsg');
+      prog.style.display = 'block';
+      msg.textContent = 'OCR 시작 중...';
+
+      try {
+        const res = await fetch('/api/v1/knowledge/reprocess-ocr?doc_name=' + encodeURIComponent(docName), { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('OCR 백그라운드 시작됨 — 진행 상태가 표시됩니다');
+          // Start polling
+          if (_ocrPolling) clearInterval(_ocrPolling);
+          _ocrPolling = setInterval(pollOcrStatus, 3000);
+        } else {
+          showToast('\u274c ' + (data.detail || '오류'));
+          prog.style.display = 'none';
+        }
+      } catch (e) {
+        showToast('\u274c 서버 오류: ' + e.message);
+        prog.style.display = 'none';
+      }
+    }
+
+    async function pollOcrStatus() {
+      try {
+        const res = await fetch('/api/v1/knowledge/ocr-status');
+        const s = await res.json();
+        const prog = document.getElementById('vaultUploadProgress');
+        const msg = document.getElementById('vaultUploadMsg');
+
+        if (s.done) {
+          clearInterval(_ocrPolling); _ocrPolling = null;
+          prog.style.display = 'none';
+          showToast('\u2705 OCR 완료! ' + s.chunks + '개 청크 (이미지 텍스트 포함)');
+          alert('OCR 재처리 완료!\n\n문서: ' + s.doc_name + '\n총 청크: ' + s.chunks + '개\nOCR 처리 페이지: ' + s.ocr_pages + '개\n\n이제 채팅에서 이미지 속 텍스트도 검색됩니다.');
+          await loadVaultDocs();
+        } else if (s.error) {
+          clearInterval(_ocrPolling); _ocrPolling = null;
+          prog.style.display = 'none';
+          showToast('\u274c OCR 오류: ' + s.error);
+        } else if (s.running) {
+          prog.style.display = 'block';
+          const pct = s.total_pages > 0 ? Math.round(s.current_page / s.total_pages * 100) : 0;
+          msg.textContent = 'OCR 진행 중: ' + s.current_page + '/' + s.total_pages + '페이지 (' + pct + '%) — OCR: ' + s.ocr_pages + '페이지 처리됨';
+        }
+      } catch (e) { /* silent */ }
     }
 
     function openVaultModal() {
@@ -2191,6 +2543,296 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => { loadVaultDocs(); });
+
+    // ── Step Status + Interlock + Reset ──────────────────────────────
+    let _stepState = { step1: 'none', step2: 'none', step3: 'none' };
+
+    async function refreshStepStatus() {
+      try {
+        const res = await fetch('/api/v1/step-status');
+        const s = await res.json();
+        _stepState.step1 = s.step1.status;
+        _stepState.step2 = s.step2.status;
+        _stepState.step3 = s.step3.status;
+
+        const labels = {
+          done: ['&#x2705; 완료', '#276749'],
+          partial: ['&#x26A0; 일부 완료', '#d69e2e'],
+          none: ['&#x25CB; 미실행', '#a0aec0'],
+        };
+        ['step1','step2','step3'].forEach(k => {
+          const el = document.getElementById(k + 'Status');
+          if (el) {
+            const [text, color] = labels[_stepState[k]] || labels.none;
+            el.innerHTML = text;
+            el.style.color = color;
+            el.style.fontWeight = '600';
+          }
+        });
+      } catch (e) { /* silent */ }
+    }
+
+    function checkAndOpenStep(step) {
+      if (step === 2) {
+        if (_stepState.step1 === 'none') {
+          showToast('&#x26A0; Step 1(PDF 파싱)을 먼저 완료해야 합니다.');
+          return;
+        }
+        openMasterBuilder();
+      } else if (step === 3) {
+        if (_stepState.step2 === 'none') {
+          showToast('&#x26A0; Step 2(마스터 통합)를 먼저 완료해야 합니다.');
+          return;
+        }
+        openDraftingPanel();
+      }
+    }
+
+    async function resetWorkspace() {
+      if (!confirm('data/outputs/ 폴더의 모든 파싱 결과물을 삭제합니다.\n(지식 창고 파일은 유지됩니다)\n\n진행할까요?')) return;
+      try {
+        const res = await fetch('/api/v1/reset-workspace', { method: 'POST' });
+        const d = await res.json();
+        showToast('&#x1F5D1; 초기화 완료: ' + d.count + '개 파일 삭제');
+        refreshStepStatus();
+      } catch (e) {
+        showToast('&#x274c 초기화 오류: ' + e.message);
+      }
+    }
+
+    // ── Drafting Agent ──────────────────────────────
+    let _draftPolling = null;
+
+    function openDraftingPanel() {
+      document.getElementById('draftOverlay').classList.add('open');
+      document.getElementById('draftResult').style.display = 'none';
+      document.getElementById('draftProgressBox').style.display = 'none';
+      document.getElementById('draftStatus').textContent = '';
+    }
+    function closeDraftPanel() {
+      document.getElementById('draftOverlay').classList.remove('open');
+      if (_draftPolling) { clearInterval(_draftPolling); _draftPolling = null; }
+    }
+
+    async function startDrafting() {
+      const btn = document.getElementById('draftStartBtn');
+      btn.disabled = true;
+      btn.textContent = '초안 생성 중...';
+      document.getElementById('draftProgressBox').style.display = 'block';
+      document.getElementById('draftResult').style.display = 'none';
+
+      try {
+        const res = await fetch('/api/v1/draft-answers', { method: 'POST' });
+        const d = await res.json();
+        if (res.ok) {
+          showToast('초안 작성 시작됨');
+          if (_draftPolling) clearInterval(_draftPolling);
+          _draftPolling = setInterval(pollDraftProgress, 2000);
+        } else {
+          showToast('\u274c ' + (d.detail || '오류'));
+          btn.disabled = false;
+          btn.textContent = '전년도 기반 초안 생성';
+        }
+      } catch (e) {
+        showToast('\u274c ' + e.message);
+        btn.disabled = false;
+        btn.textContent = '전년도 기반 초안 생성';
+      }
+    }
+
+    async function pollDraftProgress() {
+      try {
+        const res = await fetch('/api/v1/draft-progress');
+        const s = await res.json();
+        const pct = s.total > 0 ? Math.round(s.current / s.total * 100) : 0;
+        document.getElementById('draftPct').textContent = pct + '%';
+        document.getElementById('draftBar').style.width = pct + '%';
+        document.getElementById('draftDetail').textContent =
+          s.current + '/' + s.total + ' 문항 | Exact: ' + s.matched + ' | Fuzzy: ' + s.fuzzy;
+
+        if (s.done) {
+          clearInterval(_draftPolling); _draftPolling = null;
+          document.getElementById('draftStartBtn').disabled = false;
+          document.getElementById('draftStartBtn').textContent = '전년도 기반 초안 생성';
+          document.getElementById('draftResult').style.display = 'block';
+          document.getElementById('draftResult').innerHTML =
+            '<b>\u2705 초안 작성 완료!</b><br>' +
+            'Exact Match: ' + s.matched + '개<br>' +
+            'Fuzzy Match: ' + s.fuzzy + '개<br>' +
+            '총 작성: ' + (s.matched + s.fuzzy) + '개 문항<br>' +
+            '<a href="/api/v1/download-master" download style="display:inline-block;margin-top:8px;padding:8px 16px;background:#276749;color:white;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">\u2b07 Master Excel 다운로드</a>';
+          showToast('\u2705 초안 작성 완료!');
+        } else if (s.error) {
+          clearInterval(_draftPolling); _draftPolling = null;
+          document.getElementById('draftStartBtn').disabled = false;
+          document.getElementById('draftStartBtn').textContent = '전년도 기반 초안 생성';
+          showToast('\u274c ' + s.error);
+        }
+      } catch (e) { /* silent */ }
+    }
+
+    // ── Master Analysis Builder ──────────────────────────────
+    let masterData = [];
+
+    function openMasterBuilder() {
+      document.getElementById('masterOverlay').classList.add('open');
+      // Check if master file already exists and load preview
+      masterCheckExisting();
+    }
+
+    function closeMasterModal() {
+      document.getElementById('masterOverlay').classList.remove('open');
+    }
+
+    async function masterCheckExisting() {
+      try {
+        const res = await fetch('/api/v1/outputs');
+        const data = await res.json();
+        const files = data.files || [];
+
+        // Source file detection
+        const sourceA = files.filter(f => f.name.includes('Questionnaire') && f.name.endsWith('_parsed.xlsx'));
+        const sourceB = files.filter(f => f.name.includes('_scoring.xlsx'));
+        const master = files.find(f => f.name.includes('Master_Analysis'));
+
+        let sourceInfo = '<div style="font-size:12px;margin-top:8px;padding:8px;background:#f7fafc;border-radius:6px">';
+        sourceInfo += '<b>Source A</b> (Questionnaire): ' + (sourceA.length ? sourceA.map(f => f.name.split('_').slice(-2)[0]).join(', ') + ' (' + sourceA.length + '개)' : '<span style="color:#c53030">없음 - Step 1 파싱 필요</span>') + '<br>';
+        sourceInfo += '<b>Source B</b> (Scoring): ' + (sourceB.length ? sourceB[0].name.substring(0, 40) + '...' : '<span style="color:#c53030">없음 - Step 1 파싱 필요</span>');
+        sourceInfo += '</div>';
+        document.getElementById('masterStatus').innerHTML = sourceInfo;
+
+        // Enable/disable build button based on sources
+        const buildBtn = document.getElementById('masterBuildBtn');
+        if (sourceA.length && sourceB.length) {
+          buildBtn.disabled = false;
+          buildBtn.title = '';
+        } else {
+          buildBtn.disabled = true;
+          buildBtn.title = 'Step 1 PDF 파싱을 먼저 완료하세요';
+        }
+
+        if (master) {
+          document.getElementById('masterDownloadLink').style.display = 'inline-flex';
+          document.getElementById('masterStatus').innerHTML +=
+            '<div style="margin-top:6px;color:#276749;font-weight:600">\u2705 기존 Master 파일 발견 (' + master.size_kb + 'KB)</div>';
+          masterLoadPreview();
+        }
+      } catch(e) { /* ignore */ }
+    }
+
+    async function buildMasterSheet() {
+      const btn = document.getElementById('masterBuildBtn');
+      const status = document.getElementById('masterStatus');
+      const translate = document.getElementById('masterTranslate').checked;
+
+      btn.disabled = true;
+      btn.innerHTML = '\u23F3 \uC0DD\uC131 \uC911...';
+      status.textContent = translate ? 'API \uBC88\uC5ED \uD3EC\uD568 \u2014 \uC2DC\uAC04\uC774 \uB2E4\uC18C \uAC78\uB9B4 \uC218 \uC788\uC2B5\uB2C8\uB2E4' : '\uBCD1\uD569 \uCC98\uB9AC \uC911...';
+
+      try {
+        const res = await fetch('/api/v1/build-master', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ translate }),
+        });
+        const result = await res.json();
+
+        if (result.status === 'success') {
+          const d = result.data;
+          document.getElementById('masterStatTotal').textContent = d.total_rows;
+          document.getElementById('masterStatMain').textContent = d.main_questions;
+          document.getElementById('masterStatSub').textContent = d.sub_rows;
+          document.getElementById('masterSummary').style.display = 'block';
+          document.getElementById('masterDownloadLink').style.display = 'inline-flex';
+          status.innerHTML = '<span style="color:#276749;font-weight:600">\u2705 \uC0DD\uC131 \uC644\uB8CC (' + (result.processing_time_sec || 0) + '\uCD08)</span>';
+          showToast('\u2705 Master Analysis \uC0DD\uC131 \uC644\uB8CC: ' + d.total_rows + '\uD589');
+
+          if (d.warnings && d.warnings.length) {
+            status.innerHTML += ' <span style="color:#c05621">(\u26A0 ' + d.warnings.length + '\uAC1C \uACBD\uACE0)</span>';
+          }
+
+          masterLoadPreview();
+          refreshStepStatus();
+        } else {
+          status.innerHTML = '<span style="color:#c53030">\u274C ' + (result.error_message || '\uC2E4\uD328') + '</span>';
+          showToast('\u274C Master \uC0DD\uC131 \uC2E4\uD328');
+        }
+      } catch(e) {
+        status.innerHTML = '<span style="color:#c53030">\u274C \uC11C\uBC84 \uC624\uB958: ' + e.message + '</span>';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '\u2699\uFE0F Master \uC0DD\uC131';
+      }
+    }
+
+    async function masterLoadPreview() {
+      const preview = document.getElementById('masterPreview');
+      preview.innerHTML = '<div style="color:#718096;text-align:center;padding:20px 0">\uBBF8\uB9AC\uBCF4\uAE30 \uB85C\uB4DC \uC911...</div>';
+      try {
+        const res = await fetch('/api/v1/master-preview');
+        const data = await res.json();
+        masterData = data.rows || [];
+        document.getElementById('masterFilterBar').style.display = 'flex';
+        masterFilterPreview();
+      } catch(e) {
+        preview.innerHTML = '<div style="color:#c53030;padding:20px;text-align:center">\uBBF8\uB9AC\uBCF4\uAE30 \uB85C\uB4DC \uC2E4\uD328: ' + e.message + '</div>';
+      }
+    }
+
+    function masterFilterPreview() {
+      const qFilter = (document.getElementById('masterFilterQ').value || '').toLowerCase();
+      const lvFilter = document.getElementById('masterFilterLv').value;
+
+      let filtered = masterData.filter(r => {
+        if (qFilter && !(r.Q_No || '').toLowerCase().includes(qFilter)) return false;
+        if (lvFilter && r.Lv !== lvFilter) return false;
+        return true;
+      });
+
+      document.getElementById('masterFilterCount').textContent = filtered.length + '\uAC1C';
+
+      const preview = document.getElementById('masterPreview');
+      if (filtered.length === 0) {
+        preview.innerHTML = '<div style="color:#718096;text-align:center;padding:20px">\uC870\uAC74\uC5D0 \uB9DE\uB294 \uD589\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.</div>';
+        return;
+      }
+
+      const show = filtered.slice(0, 200);
+      const rows = show.map(r => {
+        const lvClass = r.Lv === 'Lv.1' ? 'background:#e8f0fe;font-weight:600' : '';
+        const dc = (r.DC || '').slice(0, 40);
+        const subDes = (r.Sub_Des || '').slice(0, 40);
+        const pts = r.Max_Points || '-';
+        return `<tr style="${lvClass}">
+          <td style="white-space:nowrap;color:#276749;font-weight:600">${r.Order_No}</td>
+          <td style="white-space:nowrap">${r.Q_No}</td>
+          <td><span style="padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;${r.Lv==='Lv.1'?'background:#276749;color:#fff':'background:#e2e8f0;color:#4a5568'}">${r.Lv}</span></td>
+          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(r.Q_Des||'').replace(/"/g,'&quot;')}">${r.Q_Des || ''}</td>
+          <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${dc}">${dc}</td>
+          <td style="text-align:center">${pts}</td>
+          <td style="white-space:nowrap">${r.Sub_No || ''}</td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(subDes)}">${subDes}</td>
+        </tr>`;
+      }).join('');
+
+      preview.innerHTML = `
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:#1f4e79;color:#fff;text-align:left">
+              <th style="padding:6px 8px">#</th>
+              <th style="padding:6px 8px">Q_No</th>
+              <th style="padding:6px 8px">Lv</th>
+              <th style="padding:6px 8px">Question</th>
+              <th style="padding:6px 8px">DC Criteria</th>
+              <th style="padding:6px 8px">Points</th>
+              <th style="padding:6px 8px">Sub#</th>
+              <th style="padding:6px 8px">Sub Question</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        ${filtered.length > 200 ? '<div style="text-align:center;color:#718096;font-size:11px;padding:8px">\uC0C1\uC704 200\uAC1C \uD45C\uC2DC \uC911 (\uC804\uCCB4 ' + filtered.length + '\uAC1C)</div>' : ''}`;
+    }
   </script>
 
 </body>

@@ -4,14 +4,14 @@ import sqlite3
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 
 from backend.core.config import settings
 from backend.core.skill_loader import list_available_skills
-from backend.agents.pdf_parser_agent import run_pdf_parser
+from backend.agents.pdf_parser_agent import run_pdf_parser, run_scoring_parser, PDF_TYPE_A, PDF_TYPE_B, PDF_TYPE_LABELS
 from backend.agents.crawl_agent import run_crawl_agent
 
 router = APIRouter(prefix="/api/v1")
@@ -56,25 +56,122 @@ def health_check():
 
 
 # ─────────────────────────────────
-# PDF Parser Agent
+# Selenium SPA Crawler (Chrome headless)
 # ─────────────────────────────────
+def _crawl_with_selenium(url: str, wait_sec: int = 5) -> str:
+    """JavaScript SPA 사이트를 Chrome headless + Selenium으로 크롤링."""
+    try:
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.chrome.service import Service
+
+        opts = Options()
+        opts.add_argument("--headless=new")
+        opts.add_argument("--no-sandbox")
+        opts.add_argument("--disable-gpu")
+        opts.add_argument("--disable-dev-shm-usage")
+        opts.binary_location = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+
+        # ChromeDriver 경로 (프로젝트 내 또는 PATH)
+        driver_path = Path("c:/Project/CDP-AI-Platform/data/chromedriver.exe")
+        if driver_path.exists():
+            service = Service(str(driver_path))
+        else:
+            service = Service()  # PATH에서 찾기
+
+        driver = webdriver.Chrome(service=service, options=opts)
+        driver.set_page_load_timeout(30)
+        driver.get(url)
+
+        import time as _t
+        _t.sleep(wait_sec)
+
+        text = driver.find_element("tag name", "body").text
+        driver.quit()
+        return text
+    except Exception as e:
+        import logging
+        logging.getLogger("cdp.routes").warning("Selenium crawl failed: %s", e)
+        return ""
+
+
+# ─────────────────────────────────
+# Parsing Progress Tracking
+# ─────────────────────────────────
+_parse_progress = {
+    "running": False, "step": "", "file": "", "current": 0, "total": 0,
+    "elapsed": 0, "done": False, "error": "",
+}
+
+
+@router.get("/parse-progress")
+def get_parse_progress():
+    """파싱 진행 상태 조회."""
+    return _parse_progress
+
+
+# ─────────────────────────────────
+# PDF Parser Agent — 완전 분리된 엔드포인트
+# ─────────────────────────────────
+def _save_upload(file: UploadFile) -> Path:
+    """업로드 파일 저장 + 크기 검증. 손상 시 knowledge에서 복구."""
+    save_path = settings.UPLOAD_DIR / file.filename
+    settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    file.file.seek(0)
+    with open(save_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    if save_path.stat().st_size < 100:
+        kb = Path("c:/Project/CDP-AI-Platform/data/knowledge") / file.filename
+        if kb.exists() and kb.stat().st_size > 100:
+            shutil.copy2(str(kb), str(save_path))
+        else:
+            raise HTTPException(400, f"파일 손상 ({save_path.stat().st_size} bytes). 다시 업로드해주세요.")
+    return save_path
+
+
 @router.post("/parse-pdf")
 async def parse_pdf(
     file: UploadFile = File(...),
-    page_start: Optional[int] = None,
-    page_end: Optional[int] = None,
+    page_start: Optional[int] = Query(None),
+    page_end: Optional[int] = Query(None),
 ):
-    """CDP 가이드 PDF 업로드 → 문항+테이블 추출 및 Excel 저장.
-    page_start/page_end 로 페이지 범위 지정 가능 (대용량 분할 처리)."""
+    """CDP PDF 업로드. 파일명에 'scoring' 포함 시 채점 파서, 아니면 문항 파서."""
     if not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="PDF 파일만 업로드 가능합니다")
+        raise HTTPException(400, "PDF 파일만 업로드 가능합니다")
+    save_path = _save_upload(file)
 
-    save_path = settings.UPLOAD_DIR / file.filename
-    settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    with open(save_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+    # 파일명에 scoring 포함 → run_scoring_parser 직접 호출
+    if "scoring" in file.filename.lower():
+        result = run_scoring_parser(
+            pdf_path=str(save_path),
+            output_dir=str(settings.OUTPUT_DIR),
+            save_excel=True,
+            page_start=page_start,
+            page_end=page_end,
+        )
+    else:
+        result = run_pdf_parser(
+            pdf_path=str(save_path),
+            output_dir=str(settings.OUTPUT_DIR),
+            save_excel=True,
+            page_start=page_start,
+            page_end=page_end,
+            pdf_type=PDF_TYPE_A,
+        )
+    return result.model_dump()
 
-    result = run_pdf_parser(
+
+@router.post("/parse-scoring")
+async def parse_scoring(
+    file: UploadFile = File(...),
+    page_start: Optional[int] = Query(None),
+    page_end: Optional[int] = Query(None),
+):
+    """Scoring Methodology PDF 전용 엔드포인트 (백업)."""
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(400, "PDF 파일만 업로드 가능합니다")
+    save_path = _save_upload(file)
+    result = run_scoring_parser(
         pdf_path=str(save_path),
         output_dir=str(settings.OUTPUT_DIR),
         save_excel=True,
@@ -82,6 +179,77 @@ async def parse_pdf(
         page_end=page_end,
     )
     return result.model_dump()
+
+
+# ─────────────────────────────────
+# Workspace Reset + Step Status
+# ─────────────────────────────────
+@router.post("/reset-workspace")
+def reset_workspace():
+    """data/outputs/ 내 모든 파일 삭제 (knowledge는 유지). 초기 상태로 리셋."""
+    import glob
+    outputs_dir = Path("data/outputs")
+    deleted = []
+    if outputs_dir.exists():
+        for f in outputs_dir.iterdir():
+            if f.is_file() and f.name != ".gitkeep":
+                f.unlink()
+                deleted.append(f.name)
+        # Also clean fresh/ subfolder
+        fresh_dir = outputs_dir / "fresh"
+        if fresh_dir.exists():
+            for f in fresh_dir.iterdir():
+                if f.is_file():
+                    f.unlink()
+                    deleted.append(f"fresh/{f.name}")
+    return {"deleted": deleted, "count": len(deleted)}
+
+
+@router.get("/step-status")
+def get_step_status():
+    """각 Step의 실행 상태를 반환 (결과물 존재 여부 기준)."""
+    outputs = Path("data/outputs")
+    master = outputs / "CDP_2025_Master_Analysis.xlsx"
+
+    step1_a = list(outputs.glob("*Questionnaire*_parsed.xlsx")) if outputs.exists() else []
+    step1_b = list(outputs.glob("*_scoring.xlsx")) if outputs.exists() else []
+    has_master = master.exists() and master.stat().st_size > 1000
+
+    # Check if master has answers (AF column)
+    has_drafts = False
+    if has_master:
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(str(master), read_only=True)
+            ws = wb.active
+            ans_col = None
+            for ci, cell in enumerate(next(ws.iter_rows(min_row=1, max_row=1)), 1):
+                if cell.value == "Answer":
+                    ans_col = ci
+                    break
+            if ans_col:
+                for row in ws.iter_rows(min_row=2, max_row=10, min_col=ans_col, max_col=ans_col):
+                    if row[0].value:
+                        has_drafts = True
+                        break
+            wb.close()
+        except Exception:
+            pass
+
+    return {
+        "step1": {
+            "status": "done" if (step1_a and step1_b) else ("partial" if (step1_a or step1_b) else "none"),
+            "source_a": len(step1_a),
+            "source_b": len(step1_b),
+        },
+        "step2": {
+            "status": "done" if has_master else "none",
+            "file": master.name if has_master else None,
+        },
+        "step3": {
+            "status": "done" if has_drafts else "none",
+        },
+    }
 
 
 # ─────────────────────────────────
@@ -199,6 +367,70 @@ def draft_answer(req: DraftRequest):
     return result.model_dump()
 
 
+# ============================================================
+# Communication Tool: Master Analysis Sheet
+# ============================================================
+from backend.agents.communication_tool import build_master_sheet
+from backend.agents.drafting_agent import run_drafting_agent, draft_progress
+
+class MasterSheetRequest(BaseModel):
+    translate: bool = False
+
+@router.post("/build-master")
+def api_build_master(req: MasterSheetRequest):
+    """Source A + Source B를 병합하여 CDP_2025_Master_Analysis.xlsx 생성"""
+    result = build_master_sheet(base_dir=".", translate=req.translate)
+    return result.model_dump()
+
+@router.post("/draft-answers")
+def api_draft_answers():
+    """2024 전년도 답변 기반으로 2025 Master Analysis AF열 초안 자동 작성."""
+    import threading
+    if draft_progress.get("running"):
+        raise HTTPException(409, "이미 초안 작성 진행 중입니다.")
+    thread = threading.Thread(target=lambda: run_drafting_agent(base_dir="."), daemon=True)
+    thread.start()
+    return {"status": "started", "message": "초안 작성이 백그라운드에서 시작되었습니다."}
+
+
+@router.get("/draft-progress")
+def api_draft_progress():
+    """초안 작성 진행 상태 조회."""
+    return draft_progress
+
+
+@router.get("/master-preview")
+def master_preview(limit: int = Query(default=2000, le=5000)):
+    """Master Analysis 파일의 미리보기 데이터 반환 (JSON)"""
+    import pandas as pd
+    import numpy as np
+    path = Path("data/outputs/CDP_2025_Master_Analysis.xlsx")
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Master 파일이 없습니다. Master 생성 버튼을 먼저 실행하세요.")
+    try:
+        df = pd.read_excel(str(path), engine="openpyxl", dtype=str)
+        df = df.fillna("").replace([np.inf, -np.inf], "")
+        # Ensure all values are JSON-serializable strings
+        for col in df.columns:
+            df[col] = df[col].astype(str).replace("nan", "")
+        rows = df.head(limit).to_dict(orient="records")
+        return {"rows": rows, "total": len(df)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Master 파일 읽기 실패: {str(e)}")
+
+@router.get("/download-master")
+def download_master():
+    """생성된 Master Analysis 파일 다운로드"""
+    path = Path("data/outputs/CDP_2025_Master_Analysis.xlsx")
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Master 파일이 아직 생성되지 않았습니다. /build-master를 먼저 실행하세요.")
+    return FileResponse(
+        str(path),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename="CDP_2025_Master_Analysis.xlsx",
+    )
+
+
 @router.post("/reference/upload")
 async def upload_reference(file: UploadFile = File(...)):
     """Reference 문서를 RAG 벡터 스토어에 추가 (Phase 3)"""
@@ -252,6 +484,7 @@ async def parse_pdf_multi(
             raise HTTPException(status_code=400, detail=f"{f.filename}: PDF 파일만 가능합니다")
         save_path = settings.UPLOAD_DIR / f.filename
         settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        f.file.seek(0)
         with open(save_path, "wb") as out:
             shutil.copyfileobj(f.file, out)
         saved_paths.append(str(save_path))
@@ -266,22 +499,33 @@ async def parse_pdf_multi(
 
     def parse_one(pdf_path: str) -> Dict[str, Any]:
         filename = Path(pdf_path).name
+        fname_lower = filename.lower()
         t0 = time.time()
         try:
-            result = run_pdf_parser(
-                pdf_path=pdf_path,
-                output_dir=str(settings.OUTPUT_DIR),
-                save_excel=True,
-            )
+            # 파일명에 scoring 포함 → run_scoring_parser 직접 호출
+            if "scoring" in fname_lower:
+                result = run_scoring_parser(
+                    pdf_path=pdf_path,
+                    output_dir=str(settings.OUTPUT_DIR),
+                    save_excel=True,
+                )
+            else:
+                result = run_pdf_parser(
+                    pdf_path=pdf_path,
+                    output_dir=str(settings.OUTPUT_DIR),
+                    save_excel=True,
+                    pdf_type=PDF_TYPE_A,
+                )
             elapsed = round(time.time() - t0, 1)
+            data = result.data if isinstance(result.data, dict) else {}
             return {
                 "file": filename,
                 "status": result.status.value if hasattr(result.status, "value") else str(result.status),
-                "excel_path": result.data.get("excel_path", ""),
-                "excel_filename": Path(result.data.get("excel_path", "")).name,
-                "stats": result.data.get("stats", {}),
+                "excel_path": data.get("excel_path", ""),
+                "excel_filename": data.get("excel_filename", ""),
+                "stats": data.get("excel_stats", {}),
                 "elapsed_sec": elapsed,
-                "error": result.error,
+                "error": result.error_message or "",
             }
         except Exception as e:
             return {
@@ -447,6 +691,116 @@ def _search_chunks_sqlite(query: str, top_k: int = 5) -> list:
     return scored[:top_k]
 
 
+# OCR 진행 상태 추적
+_ocr_status = {"running": False, "doc_name": "", "current_page": 0, "total_pages": 0,
+               "ocr_pages": 0, "done": False, "error": "", "chunks": 0}
+
+
+@router.get("/knowledge/ocr-status")
+def get_ocr_status():
+    """OCR 재처리 진행 상태 조회."""
+    return _ocr_status
+
+
+@router.post("/knowledge/reprocess-ocr")
+def reprocess_knowledge_with_ocr(doc_name: str = Query(...)):
+    """지식창고의 PDF 문서를 OCR 포함하여 재처리 (백그라운드)."""
+    global _ocr_status
+    _init_kb_db()
+    file_path = KNOWLEDGE_DIR / doc_name
+    if not file_path.exists():
+        raise HTTPException(404, f"파일 없음: {doc_name}")
+    if not doc_name.lower().endswith(".pdf"):
+        raise HTTPException(400, "PDF 파일만 OCR 재처리 가능합니다")
+    if _ocr_status["running"]:
+        raise HTTPException(409, f"이미 OCR 진행 중: {_ocr_status['doc_name']} ({_ocr_status['current_page']}/{_ocr_status['total_pages']})")
+
+    import threading
+
+    def _run_ocr():
+        global _ocr_status
+        try:
+            _ocr_status = {"running": True, "doc_name": doc_name, "current_page": 0,
+                           "total_pages": 0, "ocr_pages": 0, "done": False, "error": "", "chunks": 0}
+
+            # extract_text가 내부적으로 OCR을 호출하므로, 진행 상태를 전달하기 위해
+            # _ocr_pdf_page를 래핑
+            from backend.core import knowledge_processor as kp
+            original_ocr = kp._ocr_pdf_page
+
+            def _tracked_ocr(fp, pi):
+                _ocr_status["ocr_pages"] += 1
+                return original_ocr(fp, pi)
+
+            kp._ocr_pdf_page = _tracked_ocr
+
+            # 총 페이지 수 파악
+            import pdfplumber
+            with pdfplumber.open(str(file_path)) as pdf:
+                _ocr_status["total_pages"] = len(pdf.pages)
+
+            # 진행 상태를 위해 직접 추출
+            chunks = []
+            with pdfplumber.open(str(file_path)) as pdf:
+                for page_num, page in enumerate(pdf.pages, 1):
+                    _ocr_status["current_page"] = page_num
+                    text = page.extract_text() or ""
+
+                    try:
+                        has_images = bool(page.images)
+                    except Exception:
+                        has_images = False
+
+                    if len(text.strip()) < 200 or has_images:
+                        ocr_text = _tracked_ocr(str(file_path), page_num - 1)
+                        if ocr_text:
+                            existing_words = set(text.lower().split())
+                            new_parts = [w for w in ocr_text.split() if w.lower() not in existing_words]
+                            if len(new_parts) > 10:
+                                text = text + "\n[이미지 텍스트]\n" + ocr_text
+
+                    from backend.core.knowledge_processor import _chunk_text
+                    for chunk in _chunk_text(text):
+                        chunks.append({"text": chunk, "page": page_num, "source": doc_name})
+
+            kp._ocr_pdf_page = original_ocr  # restore
+
+            if not chunks:
+                _ocr_status["error"] = "텍스트 추출 실패"
+                _ocr_status["running"] = False
+                return
+
+            store = get_knowledge_store()
+            store.add_chunks(doc_name, chunks)
+
+            conn = sqlite3.connect(_DB_PATH)
+            conn.execute("DELETE FROM knowledge_chunks WHERE doc_name = ?", (doc_name,))
+            for idx, chunk in enumerate(chunks):
+                conn.execute(
+                    "INSERT INTO knowledge_chunks (doc_name, chunk_text, chunk_index) VALUES (?, ?, ?)",
+                    (doc_name, chunk["text"], idx),
+                )
+            conn.execute(
+                "UPDATE knowledge_meta SET chunk_count = ? WHERE doc_name = ?",
+                (len(chunks), doc_name),
+            )
+            conn.commit()
+            conn.close()
+
+            _ocr_status["chunks"] = len(chunks)
+            _ocr_status["done"] = True
+            _ocr_status["running"] = False
+
+        except Exception as e:
+            _ocr_status["error"] = str(e)
+            _ocr_status["running"] = False
+
+    thread = threading.Thread(target=_run_ocr, daemon=True)
+    thread.start()
+
+    return {"status": "started", "doc_name": doc_name, "message": "OCR 재처리가 백그라운드에서 시작되었습니다. 진행 상태는 상단에 표시됩니다."}
+
+
 @router.post("/knowledge/upload")
 async def upload_knowledge(files: List[UploadFile] = File(...)):
     """다양한 형식의 파일들을 지식베이스에 추가 — 텍스트 추출 후 ChromaDB 저장"""
@@ -522,6 +876,142 @@ async def upload_knowledge(files: List[UploadFile] = File(...)):
     return {"docs": docs, "total_docs": len(docs)}
 
 
+class UrlKnowledgeRequest(BaseModel):
+    url: str
+    doc_name: Optional[str] = None  # 사용자 지정 이름 (미지정 시 URL에서 추출)
+
+
+@router.post("/knowledge/url")
+def add_knowledge_from_url(req: UrlKnowledgeRequest):
+    """URL에서 웹페이지/PDF를 크롤링하여 지식창고에 원문 저장 (LLM 요약 없음, 토큰 비용 0).
+    - HTML 페이지: 텍스트 추출 후 청크 분할
+    - PDF 직접 링크 (.pdf): 다운로드 후 PDF 텍스트 추출
+    """
+    import re as _re
+    from urllib.parse import urlparse
+
+    url = req.url.strip()
+    if not url.startswith("http"):
+        raise HTTPException(400, "http:// 또는 https://로 시작하는 URL을 입력하세요.")
+
+    KNOWLEDGE_DIR.mkdir(parents=True, exist_ok=True)
+    _init_kb_db()
+
+    parsed_url = urlparse(url)
+    domain = parsed_url.netloc
+    is_pdf_url = url.lower().endswith(".pdf")
+
+    # 문서 이름 결정
+    if req.doc_name:
+        doc_name = req.doc_name
+    elif is_pdf_url:
+        doc_name = Path(parsed_url.path).name
+    else:
+        doc_name = f"url_{domain}_{Path(parsed_url.path).stem or 'index'}.txt"
+
+    try:
+        if is_pdf_url:
+            # PDF 직접 다운로드
+            import urllib.request as _ureq
+            import ssl as _ssl
+            _ctx = _ssl.create_default_context()
+            _ctx.check_hostname = False
+            _ctx.verify_mode = _ssl.CERT_NONE
+            save_path = KNOWLEDGE_DIR / doc_name
+            req = _ureq.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with _ureq.urlopen(req, timeout=30, context=_ctx) as resp:
+                with open(save_path, "wb") as f:
+                    f.write(resp.read())
+            chunks = extract_text(str(save_path))
+        else:
+            # HTML 크롤링 (기본 크롤러 → SPA면 Selenium fallback)
+            from backend.core.crawler import WebCrawler
+            crawler = WebCrawler()
+            result = crawler.fetch(url)
+            content = result.content or ""
+            title = result.title or doc_name
+
+            # SPA 감지: 콘텐츠가 너무 짧거나 "JavaScript enabled" 포함
+            if len(content) < 300 or "javascript enabled" in content.lower():
+                # Selenium fallback 시도
+                selenium_text = _crawl_with_selenium(url)
+                if selenium_text and len(selenium_text) > 200:
+                    content = selenium_text
+                    title = doc_name
+                else:
+                    raise HTTPException(
+                        400,
+                        f"이 사이트는 JavaScript(SPA) 기반으로 자동 크롤링이 불가합니다. "
+                        f"브라우저에서 해당 페이지를 열고 Ctrl+P → PDF로 저장 후, "
+                        f"파일 업로드 기능을 이용해주세요. (URL: {url})"
+                    )
+
+            if not content or len(content.strip()) < 50:
+                raise HTTPException(400, "페이지에서 충분한 텍스트를 추출하지 못했습니다.")
+
+            # 텍스트를 청크로 분할 (500자 단위)
+            CHUNK_SIZE = 500
+            chunks = []
+            for i in range(0, len(content), CHUNK_SIZE):
+                chunk_text = content[i:i + CHUNK_SIZE].strip()
+                if chunk_text:
+                    chunks.append({"text": chunk_text, "page": i // CHUNK_SIZE + 1})
+
+            # 텍스트 파일로도 저장
+            save_path = KNOWLEDGE_DIR / doc_name
+            with open(save_path, "w", encoding="utf-8") as f:
+                f.write(f"# {title}\n# Source: {url}\n\n{content}")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"URL 처리 실패: {str(e)}")
+
+    if not chunks:
+        raise HTTPException(400, "텍스트를 추출하지 못했습니다.")
+
+    # ChromaDB 저장
+    store = get_knowledge_store()
+    added = store.add_chunks(doc_name, chunks)
+
+    # SQLite 저장 (원문, LLM 요약 없음)
+    file_size = save_path.stat().st_size if save_path.exists() else 0
+    chunk_count = added if added > 0 else len(chunks)
+    summary = f"URL: {url} | {len(content) if not is_pdf_url else file_size} bytes | {chunk_count} chunks"
+
+    year_m = _re.search(r"(20\d{2})", url + doc_name)
+    year = year_m.group(1) if year_m else ""
+
+    conn = sqlite3.connect(_DB_PATH)
+    conn.execute("DELETE FROM knowledge_chunks WHERE doc_name = ?", (doc_name,))
+    for idx, chunk in enumerate(chunks):
+        conn.execute(
+            "INSERT INTO knowledge_chunks (doc_name, chunk_text, chunk_index) VALUES (?, ?, ?)",
+            (doc_name, chunk["text"], idx),
+        )
+    conn.execute("""
+        INSERT INTO knowledge_meta (doc_name, display_name, summary, year, file_size, chunk_count)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(doc_name) DO UPDATE SET
+            display_name = excluded.display_name,
+            summary      = excluded.summary,
+            year         = excluded.year,
+            file_size    = excluded.file_size,
+            chunk_count  = excluded.chunk_count
+    """, (doc_name, doc_name, summary, year, file_size, chunk_count))
+    conn.commit()
+    conn.close()
+
+    return {
+        "doc_name": doc_name,
+        "url": url,
+        "type": "pdf" if is_pdf_url else "html",
+        "chunks_added": chunk_count,
+        "summary": summary,
+        "status": "success",
+    }
+
+
 class ChatRequest(BaseModel):
     question: str
     mode: int = 2  # 1=KB전용, 2=KB+LLM, 3=LLM전용
@@ -529,69 +1019,147 @@ class ChatRequest(BaseModel):
 
 @router.post("/chat")
 def chat(req: ChatRequest):
-    """답변 모드에 따라 지식베이스/LLM으로 CDP 질문에 답변
-    mode=1: 지식베이스 문서에 한정
-    mode=2: 지식베이스 + LLM 추론 (기본)
-    mode=3: 순수 LLM 추론
+    """Search-then-Answer 워크플로우:
+    1) 지식베이스 검색
+    2) 실시간 웹 검색 (필요 시)
+    3) Claude 추론
+    mode=1: 문서 한정, mode=2: 문서+AI (기본), mode=3: AI 추론
     """
+    from backend.tools.web_search_tool import needs_web_search, search_cdp_sites, format_search_context, format_search_sources
+
     if not req.question.strip():
         raise HTTPException(status_code=400, detail="질문이 비어있습니다")
 
     mode = req.mode if req.mode in (1, 2, 3) else 2
     context = ""
     sources = []
+    web_searched = False
 
-    # ── 지식베이스 검색 (mode 1, 2) ──────────────────────────
+    # ── Step 1: 지식베이스 검색 (mode 1, 2) ──────────────────
+    # 한국어 질문 → 영어 키워드 추가 검색으로 영문 문서 매칭 강화
+    _KO_EN_TERMS = {
+        "탄소": "carbon", "공시": "disclosure", "기후": "climate", "변화": "change",
+        "배출": "emission", "감축": "reduction", "목표": "target", "리스크": "risk",
+        "전환": "transition", "에너지": "energy", "재생": "renewable", "점수": "score",
+        "채점": "scoring", "방법론": "methodology", "질문": "question", "답변": "answer",
+        "가이드": "guidance", "보고": "reporting", "경계": "boundary", "범위": "scope",
+        "공급망": "supply chain", "가치사슬": "value chain", "중요성": "materiality",
+        "거버넌스": "governance", "인센티브": "incentive", "물": "water", "산림": "forest",
+        "생물다양성": "biodiversity", "폐기물": "waste", "정책": "policy",
+    }
+
+    search_queries = [req.question]
+    # 한국어 키워드를 영어로 변환한 쿼리 추가
+    en_words = []
+    for ko, en in _KO_EN_TERMS.items():
+        if ko in req.question:
+            en_words.append(en)
+    if en_words:
+        search_queries.append(" ".join(en_words))
+
     if mode in (1, 2):
         _init_kb_db()
         store = get_knowledge_store()
-        if store.is_active():
-            results = store.search(req.question, n_results=5)
-            if results:
-                context = "\n\n---\n\n".join([r["text"] for r in results])
-                sources = list({r["doc_name"] for r in results})
-        if not context:
-            # SQLite 키워드 폴백
-            sqlite_results = _search_chunks_sqlite(req.question, top_k=5)
-            if sqlite_results:
-                context = "\n\n---\n\n".join([c for _, _, c in sqlite_results])
-                sources = list({d for _, d, _ in sqlite_results})
+        all_results = []
+        for sq in search_queries:
+            if store.is_active():
+                results = store.search(sq, n_results=5)
+                if results:
+                    all_results.extend(results)
+            if not all_results:
+                sqlite_results = _search_chunks_sqlite(sq, top_k=5)
+                if sqlite_results:
+                    all_results.extend([{"text": c, "doc_name": d} for _, d, c in sqlite_results])
 
-        # mode=1: 문서 없으면 "찾을 수 없음" 반환
+        # Deduplicate by text content
+        seen = set()
+        unique_results = []
+        for r in all_results:
+            txt_hash = hash(r["text"][:100])
+            if txt_hash not in seen:
+                seen.add(txt_hash)
+                unique_results.append(r)
+
+        if unique_results:
+            context = "\n\n---\n\n".join([r["text"] for r in unique_results[:8]])
+            sources = list({r["doc_name"] for r in unique_results[:8]})
+
         if mode == 1 and not context:
             return {"answer": "업로드된 지식베이스 문서에서 관련 내용을 찾을 수 없습니다.\n\n문서를 먼저 업로드하거나, 답변 모드를 변경해 주세요.", "sources": []}
 
-    # ── 시스템 프롬프트 설정 ─────────────────────────────────
+    # ── Step 2: 실시간 웹 검색 (mode 2, 3 + 필요 시) ─────────
+    if mode in (2, 3) and needs_web_search(req.question):
+        try:
+            web_results = search_cdp_sites(req.question)
+            if web_results:
+                web_context = format_search_context(web_results)
+                web_sources = format_search_sources(web_results)
+                context = (context + "\n\n" + web_context).strip() if context else web_context
+                sources.extend(web_sources)
+                web_searched = True
+        except Exception as e:
+            import logging
+            logging.getLogger("cdp.chat").warning("Web search failed: %s", e)
+
+    # ── Step 3: 시스템 프롬프트 (Multilingual + CDP Expert) ────
     base = (
-        "당신은 CDP·ESG 전문 어시스턴트입니다. "
-        "답변 규칙: ① 한국어로 답변 ② 핵심만 간결하게 ③ 마크다운 기호(#, *, **, ---)는 절대 사용하지 말고 "
-        "일반 텍스트와 줄바꿈만 사용 ④ 번호 목록이 필요하면 '1.' 형식만 사용 ⑤ 강조는 따옴표나 괄호 활용."
+        "당신은 SK에코플랜트의 CDP/ESG 전문 어시스턴트입니다.\n"
+        "\n"
+        "[역할]\n"
+        "CDP(Carbon Disclosure Project) 질문지 응답, 채점 방법론(Disclosure/Awareness/Management/Leadership), "
+        "기후변화 리스크 관리, GHG 배출량 산정, SBTi 목표, Scope 1/2/3 등에 깊은 전문 지식을 보유.\n"
+        "\n"
+        "[다국어 처리 규칙]\n"
+        "1. 참고 자료가 영문이더라도 반드시 한국어로 답변 (단순 번역이 아닌 내용 해석)\n"
+        "2. CDP 전문 용어는 '한국어(영어)' 형태로 병기: 예) 탄소 공시(Carbon Disclosure), "
+        "이중 중요성(Double Materiality), 전환 계획(Transition Plan), "
+        "과학 기반 감축 목표(Science Based Targets), 물리적 리스크(Physical Risk)\n"
+        "3. 영문 가이드라인의 복잡한 내용은 한국 기업의 상황에 맞게 해석을 덧붙일 것\n"
+        "4. 번역이 모호한 경우 원문을 일부 인용하며 설명: 예) 원문에서는 'financially material'이라 "
+        "표현하는데, 이는 재무적으로 중대한 영향을 의미합니다.\n"
+        "\n"
+        "[답변 형식]\n"
+        "1. 한국어로 답변\n"
+        "2. 핵심만 간결하게 (불필요한 서론/맺음말 제거)\n"
+        "3. 마크다운 기호(#, *, **, ---)는 절대 사용하지 말고 일반 텍스트와 줄바꿈만 사용\n"
+        "4. 번호 목록은 '1.' 형식만 사용\n"
+        "5. '사이트를 확인하세요'같은 회피성 답변 금지 — 구체적 날짜, 조건, 내용을 직접 답변\n"
+        "6. 정보가 불확실하면 '(확인 필요)' 표시 후 가용 정보로 최대한 구체적 답변"
     )
     if mode == 1:
-        system_prompt = base + " 반드시 아래 문서 내용만 근거로 답변하고, 없으면 '문서에서 찾을 수 없습니다'라고 답하세요."
+        system_prompt = base + "\n\n[모드: 문서 한정] 반드시 아래 참고 자료 내용만 근거로 답변하세요."
     elif mode == 2:
-        system_prompt = base + " 문서 내용을 우선 활용하고, 부족하면 CDP·ESG 전문 지식으로 보완하세요."
-    else:  # mode == 3
-        system_prompt = base + " CDP·기후변화·ESG·탄소공개 분야 전문 지식으로 답변하세요."
+        system_prompt = base + "\n\n[모드: 문서+AI] 참고 자료를 우선 활용하고, 부족하면 CDP/ESG 전문 지식으로 보완하세요."
+    else:
+        system_prompt = base + "\n\n[모드: AI 추론] CDP/기후변화/ESG 전문 지식과 웹 검색 결과를 활용하여 답변하세요."
 
-    # ── 메시지 구성 ──────────────────────────────────────────
+    # ── Step 4: LLM 호출 ─────────────────────────────────────
     if context:
-        user_content = f"[참고 문서]\n{context[:3000]}\n\n[질문]\n{req.question}"
+        user_content = f"[참고 자료]\n{context[:4000]}\n\n[질문]\n{req.question}"
     else:
         user_content = req.question
 
-    # 채팅은 응답속도 우선 → Haiku 사용 (Sonnet 대비 5~10배 빠름)
-    chat_model = "claude-haiku-4-5-20251001"
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-    msg = client.messages.create(
-        model=chat_model,
-        max_tokens=800,
-        system=system_prompt,
-        messages=[{"role": "user", "content": user_content}],
-    )
-    answer = msg.content[0].text if msg.content else "답변을 생성할 수 없습니다."
+    if not settings.ANTHROPIC_API_KEY:
+        return {"answer": "API Key가 설정되지 않았습니다. .env 파일에 ANTHROPIC_API_KEY를 설정하세요.", "sources": [], "mode": mode}
 
-    return {"answer": answer, "sources": sources, "mode": mode}
+    try:
+        chat_model = "claude-haiku-4-5-20251001"
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        msg = client.messages.create(
+            model=chat_model,
+            max_tokens=1500,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_content}],
+        )
+        answer = msg.content[0].text if msg.content else "답변을 생성할 수 없습니다."
+    except anthropic.AuthenticationError:
+        answer = "API Key 인증 실패. .env 파일의 ANTHROPIC_API_KEY를 확인하세요."
+    except anthropic.RateLimitError:
+        answer = "API 호출 한도 초과. 잠시 후 다시 시도하세요."
+    except Exception as e:
+        answer = f"AI 응답 오류: {str(e)}"
+
+    return {"answer": answer, "sources": sources, "mode": mode, "web_searched": web_searched}
 
 
 @router.get("/knowledge/docs")

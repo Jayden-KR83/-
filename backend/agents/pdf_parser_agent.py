@@ -1134,6 +1134,907 @@ def _validate_extraction(
 
 
 # ===========================================================================
+# Document Type Classification
+# ===========================================================================
+PDF_TYPE_A = "question_guide"       # Question Guide (Reporting Guidance)
+PDF_TYPE_B = "scoring_methodology"  # Scoring Methodology
+
+PDF_TYPE_LABELS = {
+    PDF_TYPE_A: "질문 가이드 (Question Guide)",
+    PDF_TYPE_B: "채점 방법론 (Scoring Methodology)",
+}
+
+# Keywords for classification (case-insensitive)
+_TYPE_A_KEYWORDS = ["reporting guidance", "questionnaire"]
+_TYPE_B_KEYWORDS = ["scoring methodology", "point allocation", "scoring criteria"]
+
+
+def classify_pdf_type(pdf_path: str, max_pages: int = 5) -> Dict[str, Any]:
+    """
+    Analyze first N pages of a PDF to classify document type.
+
+    Returns:
+        {
+            "pdf_type": "question_guide" | "scoring_methodology",
+            "confidence": float (0.0~1.0),
+            "matched_keywords": list[str],
+            "label": str,  # Korean display label
+            "ambiguous": bool,  # True if both types detected or neither
+        }
+    """
+    if not HAS_PDFPLUMBER:
+        raise ImportError("pdfplumber is required for PDF classification")
+
+    # Priority 1: Filename-based detection
+    fname_lower = Path(pdf_path).name.lower()
+    if "scoring" in fname_lower:
+        return {
+            "pdf_type": PDF_TYPE_B,
+            "confidence": 1.0,
+            "matched_keywords": ["filename:" + Path(pdf_path).name],
+            "label": PDF_TYPE_LABELS[PDF_TYPE_B],
+            "ambiguous": False,
+        }
+
+    text_combined = ""
+    with pdfplumber.open(pdf_path) as pdf:
+        pages_to_scan = min(max_pages, len(pdf.pages))
+        for i in range(pages_to_scan):
+            page_text = pdf.pages[i].extract_text() or ""
+            text_combined += page_text + "\n"
+
+    text_lower = text_combined.lower()
+
+    a_matches = [kw for kw in _TYPE_A_KEYWORDS if kw in text_lower]
+    b_matches = [kw for kw in _TYPE_B_KEYWORDS if kw in text_lower]
+
+    a_score = len(a_matches)
+    b_score = len(b_matches)
+
+    if a_score > 0 and b_score == 0:
+        return {
+            "pdf_type": PDF_TYPE_A,
+            "confidence": min(1.0, 0.5 + a_score * 0.25),
+            "matched_keywords": a_matches,
+            "label": PDF_TYPE_LABELS[PDF_TYPE_A],
+            "ambiguous": False,
+        }
+    elif b_score > 0 and a_score == 0:
+        return {
+            "pdf_type": PDF_TYPE_B,
+            "confidence": min(1.0, 0.5 + b_score * 0.25),
+            "matched_keywords": b_matches,
+            "label": PDF_TYPE_LABELS[PDF_TYPE_B],
+            "ambiguous": False,
+        }
+    elif a_score > 0 and b_score > 0:
+        # Both detected — pick higher score, mark ambiguous
+        if a_score >= b_score:
+            pdf_type = PDF_TYPE_A
+        else:
+            pdf_type = PDF_TYPE_B
+        return {
+            "pdf_type": pdf_type,
+            "confidence": 0.4,
+            "matched_keywords": a_matches + b_matches,
+            "label": PDF_TYPE_LABELS[pdf_type],
+            "ambiguous": True,
+        }
+    else:
+        # No keywords found — default to question guide, mark ambiguous
+        return {
+            "pdf_type": PDF_TYPE_A,
+            "confidence": 0.2,
+            "matched_keywords": [],
+            "label": PDF_TYPE_LABELS[PDF_TYPE_A],
+            "ambiguous": True,
+        }
+
+
+# ===========================================================================
+# Scoring Methodology Parser (Type B)
+# ===========================================================================
+# Pattern: "1.5 - Scoring criteria" or "C1.1 Scoring criteria"
+SCORING_HEADER_PATTERN = re.compile(
+    r"^(\d+(?:\.\d+[a-z]?)*)\s*[-–]\s*[Ss]coring\s+criteria"
+)
+# Pattern: "(1.5) - Provide details..." — question reference in scoring docs
+SCORING_QUESTION_REF_PATTERN = re.compile(
+    r"^\((\d+(?:\.\d+[a-z]?)*)\)\s*[-–]?\s*(.*)"
+)
+# Pattern: point values like "2/2 points", "1/1 point", "0/0 points", "A maximum of X/Y"
+POINTS_MAX_PATTERN = re.compile(
+    r"[Aa]\s+maximum\s+of\s+(\d+(?:\.\d+)?)\s*/\s*(\d+(?:\.\d+)?)\s+points?"
+)
+POINTS_SIMPLE_PATTERN = re.compile(
+    r"(\d+(?:\.\d+)?)\s+[Pp]oints?"
+)
+# D/A/M/L criteria headers
+CRITERIA_HEADER_PATTERN = re.compile(
+    r"^(Disclosure|Awareness|Management|Leadership)\s+criteria$",
+    re.IGNORECASE,
+)
+# Route pattern: "ROUTE A)" or "ROUTE B)"
+ROUTE_PATTERN = re.compile(r"^(ROUTE\s+[A-Z])\)", re.IGNORECASE)
+
+
+def _extract_scoring_elements(
+    pdf_path: str,
+    page_start: Optional[int] = None,
+    page_end: Optional[int] = None,
+) -> Tuple[List[Dict], int]:
+    """Extract elements from a Scoring Methodology PDF."""
+    if not HAS_PDFPLUMBER:
+        raise ImportError("pdfplumber is required for PDF parsing")
+
+    elements: List[Dict] = []
+    total_pages = 0
+
+    with pdfplumber.open(pdf_path) as pdf:
+        total_pages = len(pdf.pages)
+        start_idx = (page_start - 1) if page_start else 0
+        end_idx = page_end if page_end else total_pages
+        start_idx = max(0, start_idx)
+        end_idx = min(total_pages, end_idx)
+
+        for page_idx in range(start_idx, end_idx):
+            page = pdf.pages[page_idx]
+            page_num = page_idx + 1
+
+            try:
+                page_rects = _get_page_rects(page)
+
+                # Extract tables with color classification
+                tables = page.find_tables()
+                table_bboxes = []
+                for tbl in tables:
+                    try:
+                        bbox = tbl.bbox
+                        table_bboxes.append(bbox)
+                        table_data = tbl.extract()
+                        classified_rows = _classify_table_by_color(
+                            table_data, bbox, page_rects
+                        )
+                        elements.append({
+                            "type": "table",
+                            "page": page_num,
+                            "y_top": bbox[1],
+                            "data": table_data,
+                            "bbox": bbox,
+                            "classified_rows": classified_rows,
+                        })
+                    except Exception as te:
+                        logger.warning("Page %d: scoring table error: %s", page_num, str(te))
+
+                # Extract text outside tables — split by question refs for y-ordering
+                try:
+                    def not_in_table(obj, _bboxes=table_bboxes):
+                        obj_y_mid = (obj.get("top", 0) + obj.get("bottom", 0)) / 2.0
+                        for bbox in _bboxes:
+                            if (bbox[1] - 2) <= obj_y_mid <= (bbox[3] + 2):
+                                return False
+                        return True
+                    filtered_page = page.filter(not_in_table)
+                    words = filtered_page.extract_words() or []
+                    text_outside = filtered_page.extract_text() or ""
+                except Exception:
+                    words = []
+                    text_outside = page.extract_text() or ""
+
+                if text_outside.strip():
+                    # Build word position map for question refs
+                    qref_positions = {}  # "(X.Y)" -> y_top
+                    for w in words:
+                        wt = w.get("text", "")
+                        if wt.startswith("(") and ")" in wt:
+                            qref_positions[wt] = w.get("top", 0)
+
+                    # Split text at question refs to assign y positions
+                    lines = text_outside.split("\n")
+                    current_segment = []
+                    current_y = 0.0
+
+                    for line in lines:
+                        ls = line.strip()
+                        if not ls:
+                            continue
+                        # Check if this line starts a new question ref
+                        m = SCORING_QUESTION_REF_PATTERN.match(ls)
+                        if m:
+                            # Flush previous segment
+                            if current_segment:
+                                elements.append({
+                                    "type": "text",
+                                    "page": page_num,
+                                    "y_top": current_y,
+                                    "data": "\n".join(current_segment),
+                                })
+                                current_segment = []
+                            # Find y position of this question ref
+                            qkey = "(%s)" % m.group(1)
+                            current_y = qref_positions.get(qkey, current_y + 0.1)
+                        current_segment.append(ls)
+
+                    if current_segment:
+                        elements.append({
+                            "type": "text",
+                            "page": page_num,
+                            "y_top": current_y,
+                            "data": "\n".join(current_segment),
+                        })
+            except Exception as page_err:
+                logger.error("Page %d scoring parse error: %s", page_num, str(page_err))
+
+    elements.sort(key=lambda e: (e["page"], e["y_top"]))
+    return elements, total_pages
+
+
+def _detect_point_allocation_table(table_data: List[List]) -> bool:
+    """Check if a table is a Point Allocation table (header, data, or header-only)."""
+    if not table_data:
+        return False
+    all_text = ""
+    for row in table_data:
+        all_text += " ".join(_clean_cell(c).lower() for c in (row or [])) + " "
+    return ("numerator" in all_text or "denominator" in all_text) and (
+        "disclosure" in all_text or "awareness" in all_text
+    )
+
+
+def _is_pa_data_only_table(table_data: List[List]) -> bool:
+    """Check if a table is a PA data-only row (no headers, just numbers).
+    e.g. [['2', '2', '1', '1', '0 or 1', '0 or 1', '0', '0']]"""
+    if not table_data or len(table_data) != 1:
+        return False
+    row = table_data[0]
+    non_empty = [_clean_cell(c) for c in (row or []) if _clean_cell(c)]
+    if len(non_empty) < 4:
+        return False
+    # All non-empty values should be numeric-looking
+    return all(v[0].isdigit() or v.startswith("0") for v in non_empty)
+
+
+def _extract_point_allocation(table_data: List[List]) -> Dict[str, str]:
+    """Extract Point Allocation table into {D_num, D_den, A_num, ...} dict.
+
+    Real PDF structure (24 columns, many empty):
+      Row 0: ['', 'Disclosure', '', '', 'Disclosure', '', '', 'Awareness', ...]
+      Row 1: ['', 'numerator',  '', '', 'denominator','', '', 'numerator', ...]
+      Row 2: ['', '7.5',        '', '', '7.5',        '', '', '4',         ...]
+
+    Strategy: strip empty cells from each row → pair headers with data positionally.
+    """
+    if not table_data or len(table_data) < 2:
+        return {}
+
+    # Strip empty cells from each row, keeping only non-empty values
+    def _strip_empty(row):
+        return [_clean_cell(c) for c in (row or []) if _clean_cell(c)]
+
+    # Find header rows (contain level names) and data row (contains numbers)
+    level_row = []   # e.g. ['Disclosure', 'Disclosure', 'Awareness', ...]
+    suffix_row = []  # e.g. ['numerator', 'denominator', 'numerator', ...]
+    data_row = []    # e.g. ['7.5', '7.5', '4', '4', '1 or 2', '2', ...]
+
+    for row in table_data:
+        stripped = _strip_empty(row)
+        if not stripped:
+            continue
+        joined = " ".join(stripped).lower()
+        if "disclosure" in joined and "awareness" in joined:
+            level_row = stripped
+        elif "numerator" in joined and "denominator" in joined:
+            suffix_row = stripped
+        elif stripped and (stripped[0][0:1].isdigit() or stripped[0].startswith("0")):
+            data_row = stripped
+
+    if not data_row:
+        return {}
+
+    # Build 8-column mapping: pair level+suffix → data value
+    # Expected order: D_num, D_den, A_num, A_den, M_num, M_den, L_num, L_den
+    level_map = {"disclosure": "D", "awareness": "A",
+                 "management": "M", "leadership": "L"}
+
+    result = {}
+    for i, val in enumerate(data_row):
+        # Determine level from level_row
+        level_short = ""
+        if i < len(level_row):
+            for full, short in level_map.items():
+                if full in level_row[i].lower():
+                    level_short = short
+                    break
+
+        # Determine suffix from suffix_row
+        suffix = ""
+        if i < len(suffix_row):
+            sl = suffix_row[i].lower()
+            if "numerator" in sl:
+                suffix = "num"
+            elif "denominator" in sl:
+                suffix = "den"
+
+        if level_short and suffix:
+            key = level_short + "_" + suffix
+            result[key] = val
+
+    return result
+
+
+def _build_scoring_questions(elements: List[Dict]) -> List[Dict]:
+    """
+    Build ONE ROW per question from CDP Scoring Methodology PDF.
+
+    Each row contains the full D/A/M/L criteria + point allocation in columns,
+    clearly distinct from the questionnaire parser output.
+
+    Output columns per row:
+      문항ID, 질문내용, 페이지, 최대배점,
+      Disclosure_기준, Disclosure_배점,
+      Awareness_기준, Awareness_배점,
+      Management_기준, Management_배점,
+      Leadership_기준, Leadership_배점,
+      D_num, D_den, A_num, A_den, M_num, M_den, L_num, L_den,
+      테마, 섹터
+    """
+    questions: List[Dict] = []  # final output
+    scoring_started = False  # True after "X.Y - Scoring criteria" header
+    pending_pa_header = None  # Header-only PA table waiting for data row
+
+    # -- Current question accumulator --
+    cur: Optional[Dict] = None
+    current_level = ""       # "Disclosure" | "Awareness" | ...
+    level_text_buf: List[str] = []
+
+    def _flush_level():
+        nonlocal level_text_buf, current_level
+        if cur and current_level and level_text_buf:
+            key = current_level + "_기준"
+            existing = cur.get(key, "")
+            text = " ".join(level_text_buf).strip()
+            cur[key] = (existing + " " + text).strip() if existing else text
+        level_text_buf = []
+
+    def _flush_question():
+        nonlocal cur, current_level
+        _flush_level()
+        if cur and cur.get("문항ID"):
+            questions.append(cur)
+        cur = None
+        current_level = ""
+
+    def _new_question(qid: str, page: int):
+        nonlocal cur, current_level
+        _flush_question()
+        cur = {
+            "문항ID": qid,
+            "질문내용": "",
+            "페이지": page,
+            "최대배점": "",
+            "Disclosure_기준": "", "Disclosure_배점": "",
+            "Awareness_기준": "", "Awareness_배점": "",
+            "Management_기준": "", "Management_배점": "",
+            "Leadership_기준": "", "Leadership_배점": "",
+            "D_num": "", "D_den": "", "A_num": "", "A_den": "",
+            "M_num": "", "M_den": "", "L_num": "", "L_den": "",
+            "테마": "", "섹터": "",
+        }
+        current_level = ""
+
+    for elem in elements:
+        if elem["type"] == "text":
+            for line in elem["data"].split("\n"):
+                ls = line.strip()
+                if not ls:
+                    continue
+                # Skip noise
+                if ls.startswith("Page ") and " out of " in ls:
+                    continue
+                if ls.startswith("@cdp") or ls == "CDP" or ls.startswith("\u25d1"):
+                    continue
+
+                # 1) Question reference: "(1.5) - Provide details..."
+                m = SCORING_QUESTION_REF_PATTERN.match(ls)
+                if m:
+                    qid = m.group(1)
+                    qtxt = m.group(2).strip()
+                    _new_question(qid, elem["page"])
+                    cur["질문내용"] = qtxt
+                    scoring_started = False  # wait for "X.Y - Scoring criteria"
+                    continue
+
+                # 2) Scoring section header: "1.5 - Scoring criteria"
+                m = SCORING_HEADER_PATTERN.match(ls)
+                if m:
+                    hdr_id = m.group(1)
+                    if cur is None:
+                        _new_question(hdr_id, elem["page"])
+                    elif cur.get("문항ID") != hdr_id:
+                        _new_question(hdr_id, elem["page"])
+                    scoring_started = True
+                    continue
+
+                # No current question context → skip
+                if cur is None:
+                    continue
+
+                # 3) D/A/M/L criteria header
+                m = CRITERIA_HEADER_PATTERN.match(ls)
+                if m:
+                    _flush_level()
+                    current_level = m.group(1).capitalize()
+                    continue
+
+                # 4) Route: "ROUTE A)" / "ROUTE B)"
+                m = ROUTE_PATTERN.match(ls)
+                if m:
+                    _flush_level()
+                    route_label = m.group(1).upper()
+                    rest = ls[m.end():].strip()
+                    level_text_buf.append("[%s] %s" % (route_label, rest))
+                    continue
+
+                # 5) "Not scored."
+                if ls.lower() == "not scored.":
+                    _flush_level()
+                    if current_level:
+                        cur[current_level + "_기준"] = "Not scored."
+                        cur[current_level + "_배점"] = "0"
+                    continue
+
+                # 6) Max points: "A maximum of X/Y points..."
+                m = POINTS_MAX_PATTERN.search(ls)
+                if m:
+                    numerator = m.group(1)
+                    denominator = m.group(2)
+                    pts_str = "%s/%s" % (numerator, denominator)
+                    is_question_level = "for this question" in ls.lower()
+
+                    if not current_level:
+                        # Outside D/A/M/L section → overall max
+                        cur["최대배점"] = pts_str
+                    else:
+                        # Inside D/A/M/L section
+                        _flush_level()
+                        cur[current_level + "_배점"] = pts_str
+                        # If overall max not set yet and "for this question",
+                        # this is the overall question max (appears before Awareness)
+                        if not cur["최대배점"] and is_question_level:
+                            cur["최대배점"] = pts_str
+                    continue
+
+                # 7) Simple points: "X point(s)"
+                m = POINTS_SIMPLE_PATTERN.search(ls)
+                if m and current_level:
+                    level_text_buf.append(ls)
+                    _flush_level()
+                    pts = m.group(1)
+                    cur[current_level + "_배점"] = pts
+                    continue
+
+                # 8) "Point Allocation" text header → skip
+                if "point allocation" in ls.lower():
+                    continue
+
+                # 9) "OR" separator between routes
+                if ls == "OR":
+                    _flush_level()
+                    level_text_buf.append("[OR]")
+                    continue
+
+                # 10) Accumulate criteria text
+                if current_level:
+                    level_text_buf.append(ls)
+                # else: general description text, skip for now
+
+        elif elem["type"] == "table":
+            _flush_level()
+            table_data = elem.get("data") or []
+
+            if _detect_point_allocation_table(table_data):
+                alloc = _extract_point_allocation(table_data)
+                if alloc:
+                    if cur and scoring_started:
+                        target = cur
+                    elif questions:
+                        target = questions[-1]
+                    else:
+                        target = cur
+                    if target:
+                        # Only assign if target doesn't already have D_num,
+                        # or overwrite with non-zero values (last wins for same question)
+                        if not target.get("D_num") or any(v != "0" for v in alloc.values()):
+                            for k, v in alloc.items():
+                                target[k] = v
+                else:
+                    pending_pa_header = table_data
+
+            elif _is_pa_data_only_table(table_data):
+                # Data-only row from a page-split PA table
+                # Build complete table by combining with pending header
+                if pending_pa_header:
+                    merged = pending_pa_header + table_data
+                    pending_pa_header = None
+                else:
+                    # No pending header — build with standard D/A/M/L order
+                    merged = [
+                        ["Disclosure", "Disclosure", "Awareness", "Awareness",
+                         "Management", "Management", "Leadership", "Leadership"],
+                        ["numerator", "denominator", "numerator", "denominator",
+                         "numerator", "denominator", "numerator", "denominator"],
+                    ] + table_data
+
+                alloc = _extract_point_allocation(merged)
+                if alloc:
+                    # Split PA data always belongs to the PREVIOUS question
+                    # (cur just received a new question ref before this data arrived)
+                    if questions:
+                        target = questions[-1]
+                    else:
+                        target = cur
+                    if target:
+                        if not target.get("D_num") or any(v != "0" for v in alloc.values()):
+                            for k, v in alloc.items():
+                                target[k] = v
+
+            else:
+                # Theme/Sector table
+                target = cur
+                if target and table_data:
+                    all_vals = []
+                    for row in table_data:
+                        for c in (row or []):
+                            v = _clean_cell(c)
+                            if v and v.lower() not in ("theme", "sector that scoring criteria apply to",
+                                                        "sector that scoring criteria a"):
+                                if v not in all_vals:
+                                    all_vals.append(v)
+                    if all_vals:
+                        target["테마"] = all_vals[0]
+                        if len(all_vals) > 1:
+                            target["섹터"] = " ".join(all_vals[1:])
+
+    _flush_question()
+
+
+    return questions
+
+
+def _extract_pa_by_y_interleave(pdf_path: str, page_start=None, page_end=None) -> Dict[str, Dict]:
+    """Extract Point Allocation values by processing text and tables in y-coordinate order.
+    Returns {qid: {D_num, D_den, A_num, A_den, M_num, M_den, L_num, L_den}}."""
+    if not HAS_PDFPLUMBER:
+        return {}
+
+    def _clean(c):
+        if c is None:
+            return ""
+        s = str(c).strip()
+        return "" if s.lower() in ("nan", "none") else s
+
+    def _extract_pa(table_data):
+        rows = [[_clean(c) for c in (row or []) if _clean(c)] for row in table_data]
+        rows = [r for r in rows if r]
+        if not rows:
+            return None
+        level_row = suffix_row = data_row = None
+        for r in rows:
+            j = " ".join(r).lower()
+            if "disclosure" in j and "awareness" in j:
+                level_row = r
+            elif "numerator" in j and "denominator" in j:
+                suffix_row = r
+            elif r and (r[0][0:1].isdigit() or r[0].startswith("0")):
+                data_row = r
+        if not data_row:
+            return None
+        if not level_row:
+            level_row = ["Disclosure"] * 2 + ["Awareness"] * 2 + ["Management"] * 2 + ["Leadership"] * 2
+        if not suffix_row:
+            suffix_row = ["numerator", "denominator"] * 4
+        lm = {"disclosure": "D", "awareness": "A", "management": "M", "leadership": "L"}
+        result = {}
+        for i, val in enumerate(data_row):
+            lv = ""
+            if i < len(level_row):
+                for f, s in lm.items():
+                    if f in level_row[i].lower():
+                        lv = s
+                        break
+            sx = ""
+            if i < len(suffix_row):
+                sl = suffix_row[i].lower()
+                if "numerator" in sl:
+                    sx = "num"
+                elif "denominator" in sl:
+                    sx = "den"
+            if lv and sx:
+                result[lv + "_" + sx] = val
+        return result if len(result) >= 4 else None
+
+    qref_pat = re.compile(r"\((\d+(?:\.\d+[a-z]?)*)\)\s*[-\u2013]")
+    ground_truth = {}
+    last_qid = None
+    pending_header = None
+
+    with pdfplumber.open(pdf_path) as pdf:
+        total = len(pdf.pages)
+        si = (page_start - 1) if page_start else 0
+        ei = page_end if page_end else total
+
+        for pi in range(max(0, si), min(total, ei)):
+            page = pdf.pages[pi]
+            events = []
+
+            try:
+                words = page.extract_words() or []
+                text = page.extract_text() or ""
+                for m in qref_pat.finditer(text):
+                    qid = m.group(1)
+                    target = "(" + qid + ")"
+                    y = 0
+                    for w in words:
+                        if target in w.get("text", ""):
+                            y = w.get("top", 0)
+                            break
+                    else:
+                        y = (m.start() / max(len(text), 1)) * page.height
+                    events.append((y, "qref", qid))
+            except Exception:
+                pass
+
+            for tbl in page.find_tables():
+                try:
+                    data = tbl.extract()
+                    if data:
+                        events.append((tbl.bbox[1], "table", data))
+                except Exception:
+                    pass
+
+            events.sort(key=lambda x: x[0])
+
+            for _, etype, edata in events:
+                if etype == "qref":
+                    last_qid = edata
+                elif etype == "table":
+                    at = " ".join(_clean(c).lower() for row in edata for c in (row or []))
+                    is_pa = ("numerator" in at or "denominator" in at) and "disclosure" in at
+                    stripped = [[_clean(c) for c in (row or []) if _clean(c)] for row in edata]
+                    stripped = [r for r in stripped if r]
+                    is_data_only = (len(stripped) == 1 and len(stripped[0]) >= 4 and
+                                    all(v[0:1].isdigit() or v.startswith("0") for v in stripped[0]))
+
+                    if is_pa:
+                        pa = _extract_pa(edata)
+                        if pa and last_qid:
+                            ground_truth[last_qid] = pa
+                            pending_header = None
+                        elif not pa:
+                            pending_header = edata
+                    elif is_data_only:
+                        if pending_header:
+                            merged = pending_header + edata
+                            pa = _extract_pa(merged)
+                            if pa and last_qid:
+                                ground_truth[last_qid] = pa
+                            pending_header = None
+                        else:
+                            std_header = [
+                                ["Disclosure", "Disclosure", "Awareness", "Awareness",
+                                 "Management", "Management", "Leadership", "Leadership"],
+                                ["numerator", "denominator", "numerator", "denominator",
+                                 "numerator", "denominator", "numerator", "denominator"],
+                            ]
+                            pa = _extract_pa(std_header + edata)
+                            if pa and last_qid:
+                                ground_truth[last_qid] = pa
+
+    return ground_truth
+
+
+def _save_scoring_excel(
+    elements: List[Dict],
+    output_path: str,
+    source_file: str = "",
+    pdf_path: str = "",
+    page_start: Optional[int] = None,
+    page_end: Optional[int] = None,
+) -> Dict[str, int]:
+    """Save scoring methodology data as 1 row per question with D/A/M/L columns."""
+    if not HAS_PANDAS:
+        raise ImportError("pandas is required for Excel output")
+
+    scoring_questions = _build_scoring_questions(elements)
+
+    # Override PA values from accurate y-interleaved extraction
+    if pdf_path:
+        pa_truth = _extract_pa_by_y_interleave(pdf_path, page_start, page_end)
+        for q in scoring_questions:
+            qid = q.get("문항ID", "")
+            if qid in pa_truth:
+                for k, v in pa_truth[qid].items():
+                    q[k] = v
+
+    columns = [
+        "문항ID", "질문내용", "페이지", "최대배점",
+        "Disclosure_기준", "Disclosure_배점",
+        "Awareness_기준", "Awareness_배점",
+        "Management_기준", "Management_배점",
+        "Leadership_기준", "Leadership_배점",
+        "D_num", "D_den", "A_num", "A_den",
+        "M_num", "M_den", "L_num", "L_den",
+        "테마", "섹터",
+    ]
+    struct_rows = []
+    for q in scoring_questions:
+        struct_rows.append({col: q.get(col, "") for col in columns})
+
+    df = pd.DataFrame(struct_rows, columns=columns) if struct_rows else pd.DataFrame(columns=columns)
+
+    with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+        df.to_excel(writer, sheet_name="채점_방법론", index=False)
+
+        if HAS_OPENPYXL_STYLES and struct_rows:
+            try:
+                wb = writer.book
+                ws = wb["채점_방법론"]
+                DARK_GREEN = PatternFill("solid", fgColor="1F5C35")
+                LIGHT_GREEN = PatternFill("solid", fgColor="D9EAD3")
+                WHITE = PatternFill("solid", fgColor="FFFFFF")
+                HDR_FONT = Font(bold=True, color="FFFFFF", name="Calibri", size=10)
+                WRAP = Alignment(wrap_text=True, vertical="top")
+
+                # Header row
+                for cell in ws[1]:
+                    cell.fill = DARK_GREEN
+                    cell.font = HDR_FONT
+                    cell.alignment = WRAP
+
+                # Data rows — alternating green/white
+                for ri in range(2, len(struct_rows) + 2):
+                    fill = LIGHT_GREEN if (ri % 2 == 0) else WHITE
+                    for cell in ws[ri]:
+                        cell.fill = fill
+                        cell.font = Font(name="Calibri", size=10)
+                        cell.alignment = WRAP
+
+                # Auto-fit column widths (rough)
+                for col_cells in ws.columns:
+                    max_len = max(len(str(c.value or "")) for c in col_cells)
+                    adjusted = min(max_len + 2, 50)
+                    ws.column_dimensions[col_cells[0].column_letter].width = adjusted
+            except Exception as e:
+                logger.warning("Scoring style error: %s", e)
+
+    q_count = len(scoring_questions)
+    stats = {
+        "text_rows": sum(1 for e in elements if e["type"] == "text"),
+        "table_count": sum(1 for e in elements if e["type"] == "table"),
+        "table_rows": sum(len(e.get("data") or []) for e in elements if e["type"] == "table"),
+        "structured_questions": q_count,
+    }
+    logger.info("Scoring Excel saved: %s (questions=%d)", output_path, q_count)
+    return stats
+
+
+def run_scoring_parser(
+    pdf_path: str,
+    output_dir: Optional[str] = None,
+    save_excel: bool = True,
+    page_start: Optional[int] = None,
+    page_end: Optional[int] = None,
+) -> AgentResult:
+    """Parse a Scoring Methodology PDF and output structured Excel."""
+    print(f"\n[run_scoring_parser] ENTERED - file={Path(pdf_path).name}")
+    start_time = time.time()
+    warnings_list: List[str] = []
+    pdf_file = Path(pdf_path)
+
+    if not pdf_file.exists():
+        return AgentResult(
+            agent_name="ScoringMethodologyParser",
+            status=AgentStatus.FAILED,
+            error_message="PDF 파일을 찾을 수 없습니다: %s" % pdf_path,
+            data={},
+            processing_time_sec=round(time.time() - start_time, 2),
+        )
+
+    try:
+        elements, total_pages = _extract_scoring_elements(
+            pdf_path, page_start=page_start, page_end=page_end
+        )
+    except Exception as ex:
+        return AgentResult(
+            agent_name="ScoringMethodologyParser",
+            status=AgentStatus.FAILED,
+            error_message="PDF 추출 실패: %s" % str(ex),
+            data={},
+            processing_time_sec=round(time.time() - start_time, 2),
+        )
+
+    excel_path = None
+    excel_filename = None
+    excel_stats = {"text_rows": 0, "table_count": 0, "table_rows": 0, "structured_questions": 0}
+
+    if save_excel:
+        stem = pdf_file.stem
+        if page_start or page_end:
+            ps = page_start or 1
+            pe = page_end or total_pages
+            suffix = "_p%d-%d_scoring.xlsx" % (ps, pe)
+        else:
+            suffix = "_scoring.xlsx"
+        excel_filename = stem + suffix
+        print(f"[run_scoring_parser] excel_filename={excel_filename}")
+
+        if output_dir:
+            out_dir = Path(output_dir)
+        else:
+            out_dir = Path("c:/Project/CDP-AI-Platform/data/outputs")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        excel_path = str(out_dir / excel_filename)
+
+        try:
+            excel_stats = _save_scoring_excel(
+                elements, excel_path, source_file=pdf_file.name,
+                pdf_path=pdf_path, page_start=page_start, page_end=page_end,
+            )
+            print(f"[run_scoring_parser] Excel SAVED: {excel_path}")
+            print(f"[run_scoring_parser] stats={excel_stats}")
+        except Exception as ex:
+            msg = "Excel 저장 실패: %s" % str(ex)
+            print(f"[run_scoring_parser] Excel SAVE FAILED: {ex}")
+            logger.error(msg)
+            warnings_list.append(msg)
+            excel_path = None
+
+    validation = _validate_extraction(
+        excel_stats["text_rows"], excel_stats["table_count"], total_pages
+    )
+    warnings_list.extend(validation.warnings)
+
+    elapsed = time.time() - start_time
+    page_range_str = None
+    if page_start or page_end:
+        ps = page_start or 1
+        pe = page_end or total_pages
+        page_range_str = "%d-%d" % (ps, pe)
+
+    data = {
+        "source_file": pdf_file.name,
+        "pdf_type": PDF_TYPE_B,
+        "pdf_type_label": PDF_TYPE_LABELS[PDF_TYPE_B],
+        "total_questions": excel_stats["structured_questions"],
+        "page_range": page_range_str,
+        "excel_path": excel_path,
+        "excel_filename": excel_filename,
+        "excel_stats": excel_stats,
+        "parse_warnings": warnings_list,
+        "tables_extracted": excel_stats["table_count"],
+    }
+
+    if not validation.is_valid:
+        return AgentResult(
+            agent_name="ScoringMethodologyParser",
+            status=AgentStatus.FAILED,
+            error_message="PDF 파싱 실패: %s" % "; ".join(validation.errors),
+            data=data,
+            processing_time_sec=elapsed,
+            validation=validation,
+        )
+
+    return AgentResult(
+        agent_name="ScoringMethodologyParser",
+        status=AgentStatus.SUCCESS,
+        data=data,
+        processing_time_sec=elapsed,
+        validation=validation,
+        created_at=time.strftime("%Y-%m-%dT%H:%M:%S"),
+    )
+
+
+# ===========================================================================
 # Main function
 # ===========================================================================
 def run_pdf_parser(
@@ -1143,10 +2044,25 @@ def run_pdf_parser(
     page_start: Optional[int] = None,
     page_end: Optional[int] = None,
     session_id: Optional[str] = None,
+    pdf_type: Optional[str] = None,
 ) -> AgentResult:
+    """
+    Main PDF parser entry point.
+
+    Args:
+        pdf_type: "question_guide" or "scoring_methodology".
+                  If None, auto-classifies via classify_pdf_type().
+    """
     start_time = time.time()
     warnings_list: List[str] = []
     pdf_file = Path(pdf_path)
+
+    # ===== 디버그: 무조건 콘솔 출력 =====
+    print(f"\n{'='*60}")
+    print(f"[run_pdf_parser] CALLED")
+    print(f"  file: {pdf_file.name}")
+    print(f"  pdf_type param: {pdf_type!r}")
+    print(f"{'='*60}")
 
     if not pdf_file.exists():
         return AgentResult(
@@ -1156,6 +2072,31 @@ def run_pdf_parser(
             data={},
             processing_time_sec=round(time.time() - start_time, 2),
         )
+
+    # --- Document type branching (파일명 키워드 기반 — 절대 원칙) ---
+    # 파일명에 scoring이 포함되면 무조건 TYPE_B (pdf_type 파라미터와 무관)
+    fname_lower = pdf_file.name.lower().replace(" ", "_")
+    if "scoring" in fname_lower:
+        pdf_type = PDF_TYPE_B
+    elif pdf_type is None:
+        if "questionnaire" in fname_lower:
+            pdf_type = PDF_TYPE_A
+        else:
+            pdf_type = PDF_TYPE_A
+
+    print(f"[run_pdf_parser] RESOLVED pdf_type={pdf_type!r} for '{pdf_file.name}'")
+
+    if pdf_type == PDF_TYPE_B:
+        print(f"[run_pdf_parser] >>> ROUTING TO run_scoring_parser()")
+        return run_scoring_parser(
+            pdf_path=pdf_path,
+            output_dir=output_dir,
+            save_excel=save_excel,
+            page_start=page_start,
+            page_end=page_end,
+        )
+
+    logger.info(">>> Routing to questionnaire parser (Type A)")
 
     db_module = None
     try:
@@ -1262,6 +2203,8 @@ def run_pdf_parser(
 
     data = {
         "source_file": pdf_file.name,
+        "pdf_type": PDF_TYPE_A,
+        "pdf_type_label": PDF_TYPE_LABELS[PDF_TYPE_A],
         "total_questions": len(questions),
         "questions": questions_data,
         "page_range": page_range_str,

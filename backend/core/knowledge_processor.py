@@ -67,12 +67,73 @@ def _extract_pdf(file_path: str) -> List[Dict]:
         with pdfplumber.open(file_path) as pdf:
             for page_num, page in enumerate(pdf.pages, 1):
                 text = page.extract_text() or ""
+
+                # 이미지 속 텍스트 추출 (OCR):
+                # - 텍스트가 매우 적은 페이지 (거의 이미지만)
+                # - 또는 이미지가 포함된 페이지 (인포그래픽 등)
+                try:
+                    has_images = bool(page.images)
+                except Exception:
+                    has_images = False
+
+                need_ocr = len(text.strip()) < 200 or has_images
+                if need_ocr:
+                    ocr_text = _ocr_pdf_page(file_path, page_num - 1)
+                    if ocr_text:
+                        # 중복 제거: OCR 텍스트에서 기존 텍스트와 겹치지 않는 부분만 추가
+                        existing_words = set(text.lower().split())
+                        ocr_words = ocr_text.split()
+                        new_parts = []
+                        for w in ocr_words:
+                            if w.lower() not in existing_words:
+                                new_parts.append(w)
+                        if len(new_parts) > 10:  # 의미 있는 새 텍스트가 있을 때만
+                            text = text + "\n[이미지 텍스트]\n" + ocr_text
+
                 for chunk in _chunk_text(text):
                     chunks.append({"text": chunk, "page": page_num, "source": Path(file_path).name})
         return chunks
     except Exception as e:
         logger.error(f"PDF 추출 실패: {e}")
         return []
+
+
+def _ocr_pdf_page(file_path: str, page_index: int) -> str:
+    """PDF 페이지를 이미지로 변환 후 Claude Vision API로 OCR."""
+    try:
+        import fitz  # pymupdf
+        import base64
+        from backend.core.config import settings
+
+        doc = fitz.open(file_path)
+        page = doc[page_index]
+
+        # 페이지를 PNG 이미지로 변환 (해상도 150 DPI)
+        mat = fitz.Matrix(150 / 72, 150 / 72)
+        pix = page.get_pixmap(matrix=mat)
+        img_bytes = pix.tobytes("png")
+        doc.close()
+
+        # Claude Vision API로 텍스트 추출
+        import anthropic
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001",  # 빠르고 저렴한 모델
+            max_tokens=2000,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": img_b64}},
+                    {"type": "text", "text": "이 이미지에서 모든 텍스트를 추출해주세요. 표, 도표, 인포그래픽 안의 텍스트도 모두 포함하세요. 텍스트만 반환하고 설명은 하지 마세요."},
+                ],
+            }],
+        )
+        return msg.content[0].text.strip() if msg.content else ""
+    except Exception as e:
+        logger.warning(f"OCR failed for page {page_index + 1}: {e}")
+        return ""
 
 
 def _extract_excel(file_path: str) -> List[Dict]:
